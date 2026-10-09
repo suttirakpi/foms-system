@@ -39,13 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button className="btn-nav-register" onClick={onNavigateRegister}>
             ลงทะเบียนเจ้าภาพ
           </button>
-          <div
-            className="nav-user-avatar"
-            onClick={onNavigateLogin}
-            title="บัญชีผู้ใช้"
-          >
-            👤
-          </div>
         </div>
       </div>
     </header>
