@@ -243,7 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </p>
                 </div>
 
-                <div className="trust-card">
+                {/* <div className="trust-card">
                   <div className="trust-card-header">
                     <span className="bullet-indicator" />
                     <h4>ระบบ E-Card & แผนที่นำทาง</h4>
@@ -252,7 +252,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     สร้างการ์ดเชิญดิจิทัลระบุกำหนดการและประธานในพิธี
                     พร้อมแนบแผนที่นำทางส่งต่อผ่าน LINE Group ได้ทันที
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
