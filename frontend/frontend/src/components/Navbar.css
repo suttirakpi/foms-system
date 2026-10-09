@@ -1,0 +1,107 @@
+.navbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--paper);
+  border-bottom: 1px solid var(--gray-line);
+  width: 100%;
+}
+
+.navbar-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.brand-logo {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-title {
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  color: var(--black);
+}
+
+.logo-subtitle {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--black);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-action-text {
+  font-size: 13px;
+  color: var(--black);
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.nav-action-divider {
+  color: var(--gray-line);
+  font-size: 12px;
+}
+
+.btn-nav-register {
+  background: transparent;
+  border: 1px solid var(--gray-line);
+  color: var(--black);
+  padding: 0.45rem 1rem;
+  font-size: 12px;
+  border-radius: 2px;
+  font-family: "Kanit", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-nav-register:hover {
+  border-color: var(--gold);
+}
+
+.nav-user-avatar {
+  background: var(--black);
+  color: var(--white);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .nav-links {
+    display: none;
+  }
+}
