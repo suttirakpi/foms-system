@@ -17,10 +17,11 @@
   box-sizing: border-box;
 }
 
-.brand-logo {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
+.brand-logo-img {
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-title {

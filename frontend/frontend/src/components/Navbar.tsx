@@ -1,6 +1,6 @@
 import React from "react";
 import "./Navbar.css";
-
+import logoImg from "../assets/logo-removebg.png"; // หรือชี้ไปที่ path ของรูปโลโก้
 interface NavbarProps {
   onNavigateHome?: () => void;
   onNavigateLogin?: () => void;
@@ -17,8 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="navbar-container">
         {/* โลโก้โครงการ */}
         <div className="brand-logo" onClick={onNavigateHome}>
-          <span className="logo-title">FOMS</span>
-          <span className="logo-subtitle">FUNERAL OPERATIONS</span>
+          <img src={logoImg} alt="ส่งสุคติ" className="brand-logo-img" />
         </div>
 
         {/* เมนูนำทางตรงกลาง */}
