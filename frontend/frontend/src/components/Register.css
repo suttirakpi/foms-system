@@ -1,0 +1,66 @@
+.register-card {
+  max-width: 600px;
+}
+
+.subtitle-badge {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.info-box {
+  background: var(--paper);
+  border: 1px solid var(--gray-line);
+  padding: 1rem;
+  border-radius: 2px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.info-box strong {
+  display: block;
+  color: var(--black);
+  margin-bottom: 0.25rem;
+}
+
+.label-with-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.label-with-step label {
+  margin-bottom: 0;
+}
+
+.step-num {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.pdpa-box {
+  background: var(--paper);
+  padding: 1rem;
+  border: 1px solid var(--gray-line);
+  border-radius: 2px;
+}
+
+.link-pdpa {
+  text-decoration: underline;
+  cursor: pointer;
+}
