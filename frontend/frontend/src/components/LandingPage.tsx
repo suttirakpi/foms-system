@@ -36,10 +36,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </span>
               </h1>
               <p className="hero-desc">
-                แพลตฟอร์มบริหารจัดการงานฌาปนกิจแบบครบวงจร (ERP)
-                เชื่อมโยงระบบจองศาลา คำนวณทรัพยากร
-                และรันคิวพิธีการหน้างานอย่างแม่นยำ
-                ป้องกันการจัดคิวซ้อนและข้อผิดพลาด 100%
+                แพลตฟอร์มบริหารจัดการงานฌาปนกิจ เชื่อมโยงเจ้าภาพ วัด
+                และทีมงานไว้ในระบบเดียว
+                จองศาลาและจัดคิวพระสงฆ์โดยตรวจสอบการซ้อนทับก่อนยืนยัน
+                พร้อมคำนวณค่าใช้จ่ายจากแพ็กเกจและจำนวนแขกให้เห็นทันที
               </p>
 
               <div className="hero-buttons">
@@ -56,18 +56,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <div className="hero-stats">
                 <div className="stat-item">
-                  <span className="stat-number">100%</span>
-                  <span className="stat-label">ป้องกันการจองคิวซ้อนทับ</span>
+                  <span className="stat-number">2 ชั้น</span>
+                  <span className="stat-label">
+                    ตรวจคิวศาลาและคิวพระก่อนยืนยัน
+                  </span>
                 </div>
                 <div className="stat-divider" />
                 <div className="stat-item">
-                  <span className="stat-number">0 บ.</span>
-                  <span className="stat-label">ค่าใช้จ่ายแอบแฝงล่วงหน้า</span>
+                  <span className="stat-number">ทันที</span>
+                  <span className="stat-label">
+                    เห็นราคาประเมินตามแพ็กเกจและแขก
+                  </span>
                 </div>
                 <div className="stat-divider" />
                 <div className="stat-item">
                   <span className="stat-number">Real-time</span>
-                  <span className="stat-label">อัปเดตการรันคิวหน้างาน</span>
+                  <span className="stat-label">อัปเดตสถานะงานและคิวพิธี</span>
                 </div>
               </div>
             </div>
@@ -90,13 +94,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       ศาลาบำเพ็ญกุศลวัดตัวอย่าง:
                     </span>
                     <span className="temple-name">วัดพระราม ๙ กาญจนาภิเษก</span>
-                  </div>
-                  <div className="status-badge available">
-                    <span
-                      className="dot"
-                      style={{ backgroundColor: "#735b25" }}
-                    />{" "}
-                    ศาลาว่าง
                   </div>
                 </div>
               </div>
@@ -124,9 +121,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="card-number">01</span>
                 <h3>ไม่ต้องกังวลจองศาลาซ้อน</h3>
                 <p>
-                  ตรวจสอบศาลา เมรุ และกำหนดการประกอบพิธีแบบ Real-time
-                  เชื่อมตรงกับสำนักงานวัด มีระบบ Conflict Detection
-                  ป้องกันการจัดคิวซ้อน 100%
+                  ตรวจสอบศาลา เมรุ และช่วงเวลาแบบ Real-time ระบบตรวจความซ้อนทับ
+                  (Conflict Detection) ก่อนยืนยันการจองทุกครั้ง
                 </p>
               </div>
               <div className="value-card">
@@ -134,43 +130,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <h3>ไม่ต้องคำนวณวันและลำดับพิธีเอง</h3>
                 <p>
                   ระบบจัดตารางทำงานและขั้นตอนพระสวดอภิธรรม พิธีรดน้ำศพ
-                  และพิธีฌาปนกิจให้อัตโนมัติ ครบตามประเพณีที่ถูกต้อง
-                  ไร้ความกังวล
+                  และพิธีฌาปนกิจให้อัตโนมัติ ตามเงื่อนไขของแต่ละวัด
                 </p>
               </div>
               <div className="value-card">
                 <span className="card-number">03</span>
                 <h3>ไม่ต้องกังวลเรื่องงบประมาณบานปลาย</h3>
                 <p>
-                  แพ็กเกจโปร่งใส ตรวจสอบราคาได้ชัดเจนทุกหมวดหมู่
-                  คำนวณค่าบำรุงศาลา ดอกไม้ ภัตตาหาร ตามสัดส่วนจริง
-                  ไม่มีค่าใช้จ่ายแอบแฝง
+                  แพ็กเกจโปร่งใส เห็นราคาประเมินชัดเจนก่อนยืนยัน คำนวณจากแพ็กเกจ
+                  ตัวเลือกที่เลือก และจำนวนแขก
                 </p>
               </div>
               <div className="value-card">
                 <span className="card-number">04</span>
                 <h3>ไม่ต้องกังวลเรื่องคิวพระและมัคนายก</h3>
                 <p>
-                  ระบบตรวจสอบและจัดสรรพระสงฆ์พร้อมมัคนายก/พิธีกรประจำพิธีการอย่างแม่นยำ
-                  ล็อกคิวอัตโนมัติ ไม่ต้องโทรตามทีละรูป ป้องกันคิวบุคลากรชนกัน
+                  จัดคิวพระสงฆ์และพิธีกร/มัคนายกรายคืน
+                  ระบุได้ว่าพระรูปใดประจำคืนใด ตรวจการซ้อนคิว
+                  และแนะนำรูปอื่นที่ว่างเมื่อคิวชนกัน
                 </p>
               </div>
               <div className="value-card">
                 <span className="card-number">05</span>
                 <h3>ไม่ต้องคอยโทรติดตามหลายฝ่าย</h3>
                 <p>
-                  ศูนย์กลางติดตามสถานะงานเดียวที่รวมทั้งเจ้าภาพ คณะสงฆ์
-                  เจ้าหน้าที่วัด แผนกดอกไม้
-                  และทีมออร์แกไนเซอร์ไว้ในหน้ากระดานปฏิบัติการเดียว
+                  ศูนย์กลางติดตามสถานะงานเดียวสำหรับเจ้าภาพ เจ้าหน้าที่วัด
+                  และทีมออร์แกไนเซอร์
+                  พร้อมแจ้งเตือนล่วงหน้าก่อนถึงคิวและวันพิธีสำคัญ
                 </p>
               </div>
               <div className="value-card">
                 <span className="card-number">06</span>
                 <h3>คำนวณค่าใช้จ่ายยืดหยุ่นตามแขกจริง</h3>
                 <p>
-                  ระบบคำนวณสเกลงาน (Dynamic Scaling) จัดเตรียมเก้าอี้ อุปกรณ์
-                  และอาหารว่างตามจำนวนผู้ร่วมงานจริงที่ระบุ
-                  ป้องกันของขาดหรือเกินความจำเป็น
+                  ปรับจำนวนแขกหรือตัวเลือกเมื่อไรก็ได้
+                  ระบบคำนวณราคาประเมินใหม่ทันที เจ้าภาพเห็นยอดล่าสุดเสมอ
+                  ไม่ต้องรอสรุปตอนท้ายงาน
                 </p>
               </div>
             </div>
@@ -198,10 +193,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 <div className="pdpa-assurance-card">
                   <div className="pdpa-text">
-                    <h4>มาตรฐานการรักษาข้อมูลระดับสถาบัน</h4>
+                    <h4>คุ้มครองข้อมูลส่วนบุคคล</h4>
                     <p>
-                      ข้อมูลส่วนบุคคลและเอกสารสำคัญถูกจัดเก็บด้วยการเข้ารหัสสูงสุดตาม
+                      ข้อมูลของผู้วายชนม์และครอบครัวถูกจัดเก็บตามหลักของ
                       พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA)
+                      และกำหนดสิทธิ์การเข้าถึงตามบทบาทผู้ใช้งาน
                     </p>
                   </div>
                 </div>
@@ -211,12 +207,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="trust-card">
                   <div className="trust-card-header">
                     <span className="bullet-indicator" />
-                    <h4>ระบบคำนวณทรัพยากรอัจฉริยะ</h4>
+                    <h4>ระบบคำนวณค่าใช้จ่ายยืดหยุ่น</h4>
                   </div>
                   <p>
-                    ประเมินจำนวนอุปกรณ์ เก้าอี้
-                    และชุดอาหารว่างให้พอดีกับจำนวนแขก (Guest Count)
-                    ช่วยควบคุมสเกลงานได้อย่างมีประสิทธิภาพ
+                    คำนวณราคาจากแพ็กเกจ ตัวเลือกย่อย จำนวนแขก และจำนวนคืนที่สวด
+                    ปรับจำนวนแขกแล้วเห็นยอดใหม่ทันที
                   </p>
                 </div>
 
@@ -226,9 +221,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <h4>การทำงานร่วมกันแบบ Real-time</h4>
                   </div>
                   <p>
-                    เชื่อมโยงเจ้าภาพ ไวยาวัจกร พระพิธีการ และร้านค้าภายนอก
-                    ผ่านกระดานรันคิวงาน (Operations Board)
-                    เพื่ออัปเดตสเต็ปพิธีการแบบสดๆ
+                    เชื่อมโยงเจ้าภาพ เจ้าหน้าที่วัด และทีมออร์แกไนเซอร์
+                    ผ่านข้อมูลชุดเดียวกัน เพื่ออัปเดตสถานะงานและคิวพิธีการแบบสด
+                    ๆ
                   </p>
                 </div>
 
@@ -243,16 +238,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </p>
                 </div>
 
-                {/* <div className="trust-card">
+                <div className="trust-card">
                   <div className="trust-card-header">
                     <span className="bullet-indicator" />
-                    <h4>ระบบ E-Card & แผนที่นำทาง</h4>
+                    <h4>กำหนดการดิจิทัล (E-Card)</h4>
                   </div>
                   <p>
-                    สร้างการ์ดเชิญดิจิทัลระบุกำหนดการและประธานในพิธี
-                    พร้อมแนบแผนที่นำทางส่งต่อผ่าน LINE Group ได้ทันที
+                    ระบบสร้างกำหนดการพิธีอัตโนมัติเป็นการ์ดดิจิทัล
+                    เจ้าภาพส่งต่อให้แขกและญาติผ่านช่องทางออนไลน์ได้ทันที
                   </p>
-                </div> */}
+                </div>
               </div>
             </div>
           </div>
@@ -281,8 +276,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
                 <h4>เลือกวัดและศาลา</h4>
                 <p>
-                  ค้นหาวัดที่จัดงาน ตรวจสอบสถานะความพร้อมของศาลาและเมรุได้ทันที
-                  พร้อมระบบล็อกคิวป้องกันการจองซ้ำซ้อน
+                  ค้นหาวัดที่จัดงาน ดูปฏิทินศาลาและเมรุว่าง/ไม่ว่างแบบเรียลไทม์
+                  แล้วเลือกวันเริ่มและจำนวนคืนที่สวด (1, 3, 5 หรือ 7 คืน)
                 </p>
               </div>
 
@@ -290,11 +285,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="step-card-top">
                   <span className="step-num-gold">02</span>
                 </div>
-                <h4>ระบุแขกและจัดแพ็กเกจ</h4>
+                <h4>เลือกแพ็กเกจและระบุแขก</h4>
                 <p>
-                  กำหนดระยะเวลาพิธี (3, 5, 7 คืน)
-                  พร้อมระบุจำนวนแขกเพื่อประเมินสเกลงาน
-                  และปรับแต่งรายการอุปกรณ์หรือภัตตาหารให้ลงตัว
+                  เลือกแพ็กเกจและตัวเลือกย่อย เช่น หีบศพ ดอกไม้ อาหาร
+                  พร้อมระบุจำนวนแขก ระบบแสดงราคาประเมินทันทีก่อนกดยืนยันการจอง
                 </p>
               </div>
 
@@ -302,10 +296,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="step-card-top">
                   <span className="step-num-gold">03</span>
                 </div>
-                <h4>จัดสรรคิวพิธีการ & บุคลากร</h4>
+                <h4>วัดอนุมัติและจัดคิวพระ</h4>
                 <p>
-                  ระบบสร้างตารางลำดับพิธีอัตโนมัติ พร้อมล็อกคิวผู้เกี่ยวข้อง
-                  เช่น พระสงฆ์ และพิธีกรประจำศาลา ป้องกันคิวชนกัน 100%
+                  เจ้าหน้าที่วัดตรวจสอบและอนุมัติการจอง
+                  จากนั้นจัดคิวพระสงฆ์รายคืน หากพระรูปใดติดคิวอื่น
+                  ระบบเตือนและแนะนำรูปที่ว่างแทน
                 </p>
               </div>
 
@@ -313,11 +308,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="step-card-top">
                   <span className="step-num-gold">04</span>
                 </div>
-                <h4>ติดตามการรันคิวหน้างาน</h4>
+                <h4>ชำระเงินและติดตามงาน</h4>
                 <p>
-                  เช็กสถานะการปฏิบัติงานผ่าน Operations Board
-                  ทีมงานจัดการหน้างานแบบ Real-time ตามลำดับพิธีการ
-                  แจ้งเตือนตรงถึงมือถือเจ้าภาพ
+                  ชำระตามราคาแพ็กเกจรวมด้วยการโอนและแนบสลิป รับกำหนดการ E-Card
+                  ติดตามสถานะงาน พร้อมแจ้งเตือนล่วงหน้าในระบบ
                 </p>
               </div>
             </div>
@@ -331,8 +325,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span className="section-pretitle">ทางเลือกที่ตอบโจทย์</span>
               <h2 className="section-title">แพ็กเกจการจัดพิธีการสมเกียรติ</h2>
               <p className="center-subtitle">
-                ประเมินค่าใช้จ่ายยืดหยุ่นตามจริง ไม่มีบิลแอบแฝง
-                ควบคุมทรัพยากรได้ตรงตามขนาดของพิธี
+                เลือกแพ็กเกจพร้อมตัวเลือกย่อยในแต่ละหมวด
+                เห็นราคาประเมินตามจำนวนแขกก่อนยืนยัน ไม่มีบิลแอบแฝง
               </p>
             </div>
 
@@ -353,15 +347,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <ul className="pkg-checklist">
                   <li>
                     <span className="check">✓</span>{" "}
-                    ประสานงานจองศาลาและล็อกคิวพระสวด 4 รูป
+                    จองศาลาขนาดเล็กและจัดคิวพระสงฆ์สวดอภิธรรม
+                  </li>
+                  <li>
+                    <span className="check">✓</span> หีบศพและดอกไม้มาตรฐาน
+                    เลือกแบบได้โดยไม่เพิ่มราคา
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
-                    เครื่องไทยธรรมและผ้าบังสุกุลพื้นฐาน
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    จัดสรรทรัพยากรและเก้าอี้สำหรับแขกกลุ่มเล็ก
+                    อาหารว่างและน้ำดื่มตามจำนวนแขก
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
@@ -387,29 +381,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <span className="pkg-badge featured-badge">สมเกียรติ</span>
                 </div>
                 <p className="pkg-desc">
-                  บริการครบวงจร ดูแลทั้งพิธีสงฆ์ การจัดดอกไม้และการต้อนรับ
-                  พร้อมการคำนวณสเกลทรัพยากรอัตโนมัติ (Dynamic Scaling)
+                  บริการครบวงจร ดูแลทั้งพิธีสงฆ์ ดอกไม้ และการต้อนรับ
+                  พร้อมคำนวณค่าใช้จ่ายตามจำนวนแขกอัตโนมัติ
                 </p>
                 <ul className="pkg-checklist">
                   <li>
-                    <span className="check">✓</span>{" "}
-                    สิทธิ์จองศาลาขนาดกลางพร้อมห้องรับรอง
+                    <span className="check">✓</span> สิทธิ์จองศาลาขนาดกลาง
+                    พร้อมจัดคิวพระสงฆ์รายคืน
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
-                    ระบบประเมินอุปกรณ์และเก้าอี้เสริมเมื่อยอดแขกเพิ่ม
+                    หีบศพและดอกไม้หลายแบบให้เลือกฟรี
+                    อัปเกรดเป็นหีบลายไทยพรีเมียมหรือหีบเย็นได้ (มีส่วนต่างราคา)
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
-                    จัดสรรบริการอาหารว่างและเครื่องดื่มแม่นยำตามหัวคน
+                    อาหารว่างและเครื่องดื่มคิดตามจำนวนแขกจริง
                   </li>
                   <li>
-                    <span className="check">✓</span>{" "}
-                    พวงมาลัยและชุดดอกไม้ประดับหน้าหีบศพมาตรฐาน
+                    <span className="check">✓</span> ชุดเครื่องเสียงพร้อมไมค์
+                    และของชำร่วย
                   </li>
                   <li>
-                    <span className="check">✓</span> ระบบ E-Card
-                    ส่งกำหนดการและแผนที่ผ่าน LINE
+                    <span className="check">✓</span> E-Card
+                    กำหนดการสำหรับส่งต่อให้แขกผ่านช่องทางออนไลน์
                   </li>
                 </ul>
                 <button
@@ -430,29 +425,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <span className="pkg-badge">ครบวงจร</span>
                 </div>
                 <p className="pkg-desc">
-                  ครอบคลุมสูงสุด ปฏิบัติการด้วย Operations Board หน้างาน
-                  จัดการคิวพิธีกรและต้อนรับอย่างมืออาชีพไร้รอยต่อ
+                  ครอบคลุมสูงสุด ศาลาปรับอากาศและทีมมัคนายกดูแลตลอดงาน
+                  พร้อมติดตามสถานะและคิวพิธีแบบเรียลไทม์
                 </p>
                 <ul className="pkg-checklist">
                   <li>
-                    <span className="check">✓</span>{" "}
-                    สิทธิ์จองและจัดการคิวศาลาปรับอากาศระดับพรีเมียม
-                  </li>
-                  <li>
-                    <span className="check">✓</span> กระดานควบคุมคิวหน้างาน
-                    (Operations Board) แบบเรียลไทม์
+                    <span className="check">✓</span> ศาลาปรับอากาศขนาดใหญ่
+                    พร้อมจัดคิวพระสงฆ์รายคืน
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
-                    ทีมเจ้าหน้าที่พิธีการและมัคนายก ดูแลกำกับตลอดงาน
-                  </li>
-                  <li>
-                    <span className="check">✓</span> ระบบถ่ายทอดสด (Live
-                    Streaming) สำหรับญาติมิตรต่างแดน
+                    หีบศพแกะสลักหรือหีบปรับอากาศพรีเมียม
+                    และดอกไม้ตกแต่งดีไซน์พิเศษ
                   </li>
                   <li>
                     <span className="check">✓</span>{" "}
-                    จัดสรรชุดภัตตาหารชั้นเลิศสำหรับแขกพร้อมเครื่องดื่ม
+                    ทีมมัคนายกและเจ้าหน้าที่พิธีการกำกับตลอดงาน
+                  </li>
+                  <li>
+                    <span className="check">✓</span>{" "}
+                    ระบบไฟและเครื่องเสียงเต็มรูปแบบ
+                  </li>
+                  <li>
+                    <span className="check">✓</span>{" "}
+                    จัดเลี้ยงอาหารครบวงจรสำหรับแขกพร้อมเครื่องดื่ม
                   </li>
                 </ul>
                 <button
@@ -463,6 +459,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               </div>
             </div>
+
+            <p className="packages-note">
+              ราคาจริงคำนวณจากแพ็กเกจ ตัวเลือกย่อยที่เลือก จำนวนแขก
+              และจำนวนคืนที่สวด สามารถปรับเปลี่ยนได้ก่อนวันงาน
+            </p>
           </div>
         </section>
 
@@ -491,7 +492,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   className="btn-secondary-hero"
                   onClick={onNavigateToLogin}
                 >
-                  ติดต่อเจ้าหน้าที่พิธีการ
+                  เข้าสู่ระบบเพื่อติดตามงาน
                 </button>
               </div>
             </div>

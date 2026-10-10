@@ -685,6 +685,15 @@
   border-color: var(--gold);
 }
 
+/* หมายเหตุใต้การ์ดแพ็กเกจ */
+.packages-note {
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  margin: 2rem 0 0 0;
+}
+
 /* 7. CTA Banner Section */
 .cta-banner-section {
   padding: 6rem 2rem;
