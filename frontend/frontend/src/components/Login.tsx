@@ -3,9 +3,14 @@ import "./Login.css";
 
 interface LoginProps {
   onSwitchToRegister: () => void;
+  onSuccess: () => void; // 1. เพิ่มบรรทัดนี้
 }
 
-export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
+export const Login: React.FC<LoginProps> = ({
+  onSwitchToRegister,
+  onSuccess,
+}) => {
+  // 2. รับ props onSuccess มา
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -22,7 +27,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password }),
-        credentials: "include", // รับ Cookie
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -32,7 +37,9 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
       }
 
       alert(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ${data.user.name}`);
-      // เปลี่ยนหน้าหรือเก็บสถานะผู้ใช้ตรงนี้
+
+      // 3. เรียกใช้ฟังก์ชันเปลี่ยนหน้าตรงนี้เลย!
+      onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {

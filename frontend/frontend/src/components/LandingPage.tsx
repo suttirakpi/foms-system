@@ -2,25 +2,36 @@ import React from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import "./LandingPage.css";
-
-import templeImg from "../assets/img1.jpg"; // แก้ path ให้ตรงกับโฟลเดอร์รูปในโปรเจกต์คุณตูนนะครับ
+import templeImg from "../assets/img1.jpg";
 
 interface LandingPageProps {
+  isLoggedIn?: boolean;
+  userName?: string;
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
+  onNavigateBooking?: () => void;
+  onLogout?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
+  isLoggedIn,
+  userName,
   onNavigateToLogin,
   onNavigateToRegister,
+  onNavigateBooking,
+  onLogout,
 }) => {
   return (
     <div className="landing-wrapper">
-      {/* 1. เมนูนำทางแบบแยก Component */}
       <Navbar
+        currentView="landing"
+        isLoggedIn={isLoggedIn}
+        userName={userName}
         onNavigateHome={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         onNavigateLogin={onNavigateToLogin}
         onNavigateRegister={onNavigateToRegister}
+        onNavigateBooking={onNavigateBooking}
+        onLogout={onLogout}
       />
 
       <main>

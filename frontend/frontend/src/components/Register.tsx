@@ -3,9 +3,13 @@ import "./Register.css";
 
 interface RegisterProps {
   onSwitchToLogin: () => void;
+  onSuccess: () => void;
 }
 
-export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
+export const Register: React.FC<RegisterProps> = ({
+  onSwitchToLogin,
+  onSuccess,
+}) => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -62,7 +66,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
       }
 
       alert("ลงทะเบียนสำเร็จ! เข้าสู่ระบบเรียบร้อย");
-      // เปลี่ยนหน้าไปหน้าหลักหรือแดชบอร์ด
+
+      // เรียกใช้ฟังก์ชันเปลี่ยนหน้าหลังจากสมัครสำเร็จ
+      onSuccess();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -80,14 +86,6 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
             เพื่อความราบรื่นและสมเกียรติสูงสุด
           </p>
         </div>
-
-        {/* <div className="info-box">
-          ℹ️ <strong>แบบฟอร์มเฉพาะสำหรับเจ้าภาพครอบครัว</strong>
-          <span>
-            สำหรับเจ้าหน้าที่วัด ทีมงาน Organizer หรือร้านค้า
-            จะได้รับบัญชีเข้าใช้งานโดยตรงจากผู้ดูแลระบบ
-          </span>
-        </div> */}
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -120,9 +118,6 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
               onChange={handleChange}
               required
             />
-            {/* <small className="form-hint">
-              📱 สำหรับรับ SMS แจ้งเตือนสถานะความคืบหน้าของพิธี
-            </small> */}
           </div>
 
           <div className="form-group">

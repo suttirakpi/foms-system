@@ -1,0 +1,456 @@
+.booking-wrapper {
+  background-color: var(--paper);
+  min-height: 100vh;
+  color: var(--black);
+  padding-bottom: 5rem;
+}
+
+.booking-header {
+  background-color: var(--white);
+  border-bottom: 1px solid var(--gray-line);
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.booking-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.booking-header-inner h1 {
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0 0 0.5rem 0;
+}
+
+.booking-header-inner p {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.booking-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 3rem;
+  align-items: start;
+}
+
+/* --- Left Column: Main Form --- */
+.booking-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.form-section {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 2.5rem;
+  border-radius: 4px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--gray-line);
+  padding-bottom: 1rem;
+}
+
+.step-num {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--gold);
+}
+
+.section-title h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Inputs */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+}
+
+.clean-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--gray-line);
+  background: var(--paper);
+  font-family: "Kanit", sans-serif;
+  font-size: 14px;
+  border-radius: 2px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.clean-input:focus {
+  border-color: var(--gold);
+}
+
+/* Radio Buttons for Nights */
+.radio-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-radio {
+  flex: 1;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 0.75rem 0;
+  font-family: "Kanit", sans-serif;
+  font-size: 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-radio.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+/* Halls Grid */
+.hall-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.hall-card {
+  border: 1px solid var(--gray-line);
+  padding: 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--paper);
+  transition: border-color 0.2s;
+}
+
+.hall-card.selected {
+  border-color: var(--gold);
+  background: #fcf8ee; /* gold-light tint */
+}
+
+.hall-name {
+  font-weight: 500;
+  font-size: 15px;
+  margin-bottom: 0.25rem;
+}
+
+.hall-detail {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.hall-price {
+  margin-top: 1rem;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Guest Slider */
+.slider-container {
+  background: var(--paper);
+  padding: 1.5rem;
+  border: 1px solid var(--gray-line);
+  border-radius: 2px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 14px;
+}
+
+.guest-value {
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.guest-slider {
+  width: 100%;
+  accent-color: var(--black);
+  cursor: pointer;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 0.5rem;
+}
+
+.capacity-warning {
+  margin-top: 1rem;
+  background: #fdf5e6;
+  border: 1px solid #e3c282;
+  color: #785f29;
+  padding: 1rem;
+  font-size: 12px;
+  border-radius: 2px;
+  line-height: 1.6;
+}
+
+/* Packages Grid */
+.pkg-grid-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.pkg-card-form {
+  border: 1px solid var(--gray-line);
+  padding: 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--paper);
+  transition: all 0.2s;
+}
+
+.pkg-card-form.selected {
+  border-color: var(--gold);
+  border-width: 2px;
+}
+
+.pkg-name {
+  font-weight: 500;
+  font-size: 15px;
+  margin-bottom: 0.5rem;
+}
+
+.pkg-base-price {
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.pkg-card-form p {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+  min-height: 40px;
+}
+
+.pkg-snack-rate {
+  font-size: 12px;
+  font-weight: 500;
+  border-top: 1px solid var(--gray-line);
+  padding-top: 0.75rem;
+}
+
+/* Addons */
+.addons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.addon-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--gray-line);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addon-item:hover {
+  background: var(--paper);
+}
+
+.addon-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 14px;
+}
+
+.addon-left input[type="checkbox"] {
+  accent-color: var(--black);
+  width: 16px;
+  height: 16px;
+}
+
+.addon-price {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* --- Right Column: Sticky Ledger --- */
+.booking-sidebar {
+  position: sticky;
+  top: 100px; /* เกาะตามขอบบนเวลาเลื่อนจอ */
+}
+
+.ledger-card {
+  background: var(--white);
+  border: 1px solid var(--gold);
+  padding: 2rem;
+  border-radius: 4px;
+}
+
+.ledger-card h3 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  border-bottom: 1px solid var(--gray-line);
+  padding-bottom: 1rem;
+}
+
+.ledger-section {
+  margin-bottom: 1.5rem;
+}
+
+.ledger-section h4 {
+  font-size: 13px;
+  color: var(--gold);
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 0.5rem;
+  color: var(--black);
+}
+
+.ledger-row.sub-row {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: -0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.text-warning {
+  color: #ba1a1a;
+  font-weight: 500;
+}
+
+.ledger-divider {
+  border-top: 1px dashed var(--gray-line);
+  margin: 0.75rem 0;
+}
+
+.ledger-total {
+  background: var(--paper);
+  padding: 1.25rem;
+  border-radius: 2px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.total-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.total-amount {
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--black);
+  margin: 0.5rem 0;
+}
+
+.total-note {
+  font-size: 10px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.btn-confirm-booking {
+  width: 100%;
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+  padding: 1rem;
+  font-family: "Kanit", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm-booking:hover {
+  background: transparent;
+  color: var(--black);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .booking-container {
+    grid-template-columns: 1fr;
+  }
+  .booking-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .input-row,
+  .hall-grid,
+  .pkg-grid-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* เพิ่มเติมคลาสสำหรับจัดระเบียบตัวหนังสือฝั่ง Ledger */
+.section-subtitle {
+  margin-top: 1.5rem;
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+}
+
+.text-right {
+  text-align: right;
+  max-width: 60%;
+  line-height: 1.4;
+}
+
+.btn-confirm-booking:disabled {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
