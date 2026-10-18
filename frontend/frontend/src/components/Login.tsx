@@ -44,7 +44,6 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="lock-icon">🔒</div>
           <h2>เข้าสู่ระบบ</h2>
           <p>
             ยินดีต้อนรับสู่ระบบบริหารจัดการงานฌาปนกิจ
@@ -98,13 +97,13 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
           </button>
         </form>
 
-        <div className="auth-divider">
+        {/* <div className="auth-divider">
           <span>หรือเพื่อความสะดวก</span>
         </div>
 
         <button className="btn-secondary-outline" type="button">
           💬 เข้าสู่ระบบด้วยรหัส OTP ทาง SMS / LINE
-        </button>
+        </button> */}
 
         <div className="auth-footer-link">
           ยังไม่มีบัญชีเจ้าภาพ?{" "}

@@ -74,7 +74,6 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
     <div className="auth-container">
       <div className="auth-card register-card">
         <div className="auth-header">
-          <span className="subtitle-badge">HOST REGISTRATION</span>
           <h2>ลงทะเบียนเจ้าภาพ</h2>
           <p>
             เริ่มต้นสร้างกำหนดการและบริหารจัดการพิธี
@@ -82,13 +81,13 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
           </p>
         </div>
 
-        <div className="info-box">
+        {/* <div className="info-box">
           ℹ️ <strong>แบบฟอร์มเฉพาะสำหรับเจ้าภาพครอบครัว</strong>
           <span>
             สำหรับเจ้าหน้าที่วัด ทีมงาน Organizer หรือร้านค้า
             จะได้รับบัญชีเข้าใช้งานโดยตรงจากผู้ดูแลระบบ
           </span>
-        </div>
+        </div> */}
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -121,9 +120,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
               onChange={handleChange}
               required
             />
-            <small className="form-hint">
+            {/* <small className="form-hint">
               📱 สำหรับรับ SMS แจ้งเตือนสถานะความคืบหน้าของพิธี
-            </small>
+            </small> */}
           </div>
 
           <div className="form-group">
