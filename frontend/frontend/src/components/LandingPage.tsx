@@ -2,6 +2,7 @@ import React from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import "./LandingPage.css";
+
 import templeImg from "../assets/img1.jpg";
 
 interface LandingPageProps {
@@ -10,6 +11,7 @@ interface LandingPageProps {
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
   onNavigateBooking?: () => void;
+  onNavigateDashboard?: () => void;
   onLogout?: () => void;
 }
 
@@ -19,6 +21,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateToLogin,
   onNavigateToRegister,
   onNavigateBooking,
+  onNavigateDashboard,
   onLogout,
 }) => {
   return (
@@ -31,6 +34,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         onNavigateLogin={onNavigateToLogin}
         onNavigateRegister={onNavigateToRegister}
         onNavigateBooking={onNavigateBooking}
+        onNavigateDashboard={onNavigateDashboard}
         onLogout={onLogout}
       />
 
@@ -56,7 +60,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="hero-buttons">
                 <button
                   className="btn-primary-hero"
-                  onClick={onNavigateToRegister}
+                  onClick={onNavigateBooking}
                 >
                   เริ่มต้นวางแผนและเช็กศาลาว่าง ➔
                 </button>
@@ -90,7 +94,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="hero-image-wrapper">
               <div className="temple-card">
                 <div className="temple-image-mock">
-                  {/* หากรูปภาพยังไม่มี สามารถใช้ div แทนก่อนได้ */}
                   <img
                     src={templeImg}
                     alt="ศาลาบำเพ็ญกุศล วัดพระราม ๙ กาญจนาภิเษก"
@@ -112,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        {/* 3. Section: 01–06 คุณค่าแห่งความสงบใจ (ปรับแก้ข้อ 4 และ 6 ใหม่) */}
+        {/* 3. Section: 01–06 คุณค่าแห่งความสงบใจ */}
         <section className="values-section">
           <div className="section-container">
             <div className="values-header">
@@ -264,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        {/* 5. Section: 4 ขั้นตอนสู่วิธีการที่สมเกียรติ (ปรับแก้ข้อ 3 และ 4) */}
+        {/* 5. Section: 4 ขั้นตอนสู่วิธีการที่สมเกียรติ */}
         <section id="steps" className="steps-section">
           <div className="section-container">
             <div className="center-header">
@@ -329,7 +332,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        {/* 6. Section: แพ็กเกจการจัดพิธีการสมเกียรติ (ปรับจุดเด่นตาม Flow ใหม่) */}
+        {/* 6. Section: แพ็กเกจการจัดพิธีการสมเกียรติ */}
         <section id="packages" className="packages-section">
           <div className="section-container">
             <div className="center-header">
@@ -342,7 +345,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="packages-grid">
-              {/* Economy */}
               <div className="package-card">
                 <div className="package-card-header">
                   <div>
@@ -373,15 +375,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     กำหนดการพิธีดิจิทัลและตารางเวลาสวด
                   </li>
                 </ul>
-                <button
-                  className="btn-pkg-outline"
-                  onClick={onNavigateToRegister}
-                >
+                <button className="btn-pkg-outline" onClick={onNavigateBooking}>
                   ประเมินราคาแพ็กเกจพอเพียง
                 </button>
               </div>
 
-              {/* Standard (Highlighted) */}
               <div className="package-card featured">
                 <div className="featured-banner">การเลือกยอดนิยม</div>
                 <div className="package-card-header">
@@ -418,15 +416,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     กำหนดการสำหรับส่งต่อให้แขกผ่านช่องทางออนไลน์
                   </li>
                 </ul>
-                <button
-                  className="btn-pkg-solid"
-                  onClick={onNavigateToRegister}
-                >
+                <button className="btn-pkg-solid" onClick={onNavigateBooking}>
                   ประเมินราคาแพ็กเกจสมเกียรติ
                 </button>
               </div>
 
-              {/* Premium */}
               <div className="package-card">
                 <div className="package-card-header">
                   <div>
@@ -462,10 +456,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     จัดเลี้ยงอาหารครบวงจรสำหรับแขกพร้อมเครื่องดื่ม
                   </li>
                 </ul>
-                <button
-                  className="btn-pkg-outline"
-                  onClick={onNavigateToRegister}
-                >
+                <button className="btn-pkg-outline" onClick={onNavigateBooking}>
                   ประเมินราคาแพ็กเกจครบวงจร
                 </button>
               </div>
@@ -495,7 +486,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="cta-buttons">
                 <button
                   className="btn-primary-hero"
-                  onClick={onNavigateToRegister}
+                  onClick={onNavigateBooking}
                 >
                   เช็กศาลาว่างและจองคิว
                 </button>

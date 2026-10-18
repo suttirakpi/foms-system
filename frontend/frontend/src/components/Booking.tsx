@@ -8,9 +8,10 @@ interface BookingProps {
   onNavigateHome: () => void;
   onNavigateLogin: () => void;
   onNavigateRegister: () => void;
+  onNavigateDashboard?: () => void;
   onLogout?: () => void;
 }
-// --- Mock Data (อ้างอิงฐานข้อมูลจริง) ---
+
 const MOCK_TEMPLES = [
   { id: "t1", name: "วัดพระราม ๙ กาญจนาภิเษก" },
   { id: "t2", name: "วัดมกุฏกษัตริยารามราชวรวิหาร" },
@@ -70,9 +71,9 @@ export const Booking: React.FC<BookingProps> = ({
   onNavigateHome,
   onNavigateLogin,
   onNavigateRegister,
+  onNavigateDashboard,
   onLogout,
 }) => {
-  // --- States ---
   const [selectedTemple, setSelectedTemple] = useState(MOCK_TEMPLES[0].id);
   const availableHalls = MOCK_HALLS[selectedTemple as keyof typeof MOCK_HALLS];
 
@@ -84,12 +85,10 @@ export const Booking: React.FC<BookingProps> = ({
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [isChecking, setIsChecking] = useState(false);
 
-  // รีเซ็ตศาลาเมื่อเปลี่ยนวัด
   useEffect(() => {
     setHall(MOCK_HALLS[selectedTemple as keyof typeof MOCK_HALLS][0]);
   }, [selectedTemple]);
 
-  // --- Calculations (สูตร: ราคาฐาน + (ค่าหัว x แขก x คืน) + ออปชัน) ---
   const hallTotal = hall.pricePerNight * nights;
   const snackTotal = pkg.snackPerHead * guests * nights;
   const addonsTotal = selectedAddons.reduce((sum, addonId) => {
@@ -98,7 +97,6 @@ export const Booking: React.FC<BookingProps> = ({
   }, 0);
   const grandTotal = hallTotal + pkg.basePrice + snackTotal + addonsTotal;
 
-  // Check Capacity
   const isOverCapacity = guests > hall.capacity;
 
   const handleAddonToggle = (id: string) => {
@@ -113,15 +111,18 @@ export const Booking: React.FC<BookingProps> = ({
       return;
     }
 
-    // จำลองระบบ Conflict Detection (กันศาลาชนกัน)
     setIsChecking(true);
     setTimeout(() => {
       setIsChecking(false);
       alert(
-        `✅ ตรวจสอบคิวศาลาสำเร็จ (ไม่มีคิวซ้อนทับ)\n\nส่งคำขอจองเรียบร้อยแล้ว!\nสถานะปัจจุบัน: PENDING\n\nระบบได้ส่งเรื่องให้เจ้าหน้าที่วัดตรวจสอบและจัดคิวพระสงฆ์ ท่านจะสามารถชำระเงินและแนบสลิปได้หลังจากสถานะเปลี่ยนเป็น CONFIRMED`,
+        `✅ ตรวจสอบคิวศาลาสำเร็จ (ไม่มีคิวซ้อนทับ)\n\nส่งคำขอจองเรียบร้อยแล้ว!\nสถานะปัจจุบัน: PENDING\n\nระบบจะพาท่านไปยังหน้า "งานของฉัน" เพื่อติดตามสถานะ`,
       );
-      onNavigateHome();
-    }, 1500); // ดีเลย์ 1.5 วินาทีให้ดูเหมือนประมวลผลจริง
+      if (onNavigateDashboard) {
+        onNavigateDashboard();
+      } else {
+        onNavigateHome();
+      }
+    }, 1500);
   };
 
   const currentTempleName = MOCK_TEMPLES.find(
@@ -138,6 +139,8 @@ export const Booking: React.FC<BookingProps> = ({
         onNavigateLogin={onNavigateLogin}
         onNavigateRegister={onNavigateRegister}
         onNavigateBooking={() => {}}
+        onNavigateDashboard={onNavigateDashboard}
+        onLogout={onLogout}
       />
 
       <div className="booking-header">
@@ -151,9 +154,7 @@ export const Booking: React.FC<BookingProps> = ({
       </div>
 
       <div className="booking-container">
-        {/* Left Column: Form Sections */}
         <div className="booking-main">
-          {/* Section 01: วัดและศาลา */}
           <section className="form-section">
             <div className="section-title">
               <span className="step-num">01</span>
@@ -219,7 +220,6 @@ export const Booking: React.FC<BookingProps> = ({
             </div>
           </section>
 
-          {/* Section 02: สเกลแขก */}
           <section className="form-section">
             <div className="section-title">
               <span className="step-num">02</span>
@@ -261,7 +261,6 @@ export const Booking: React.FC<BookingProps> = ({
             )}
           </section>
 
-          {/* Section 03: แพ็กเกจ */}
           <section className="form-section">
             <div className="section-title">
               <span className="step-num">03</span>
@@ -287,7 +286,6 @@ export const Booking: React.FC<BookingProps> = ({
             </div>
           </section>
 
-          {/* Section 04: บริการเสริม */}
           <section className="form-section">
             <div className="section-title">
               <span className="step-num">04</span>
@@ -313,7 +311,6 @@ export const Booking: React.FC<BookingProps> = ({
           </section>
         </div>
 
-        {/* Right Column: Sticky Ledger (ใบเสร็จ) */}
         <div className="booking-sidebar">
           <div className="ledger-card">
             <h3>สรุปรายการการจองพิธี</h3>

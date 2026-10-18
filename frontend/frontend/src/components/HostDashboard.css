@@ -1,0 +1,608 @@
+/* src/components/HostDashboard.css */
+.dashboard-wrapper {
+  background-color: var(--paper);
+  min-height: 100vh;
+  color: var(--black);
+  padding-bottom: 5rem;
+}
+
+.dashboard-header {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 2rem 1rem 2rem;
+}
+
+.breadcrumb {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-link {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.breadcrumb-link:hover {
+  color: var(--gold);
+}
+
+.breadcrumb-sep {
+  margin: 0 0.5rem;
+}
+
+.breadcrumb-current {
+  color: var(--black);
+}
+
+.dashboard-pretitle {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.dashboard-title {
+  font-size: 24px;
+  font-weight: 400;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard-subtitle {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.dashboard-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* --- Status Tracker Card --- */
+.status-tracker-card {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 2rem;
+}
+
+.status-tracker-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 2rem;
+}
+
+.stepper-container {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.stepper-line {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--gray-line);
+  z-index: 1;
+}
+
+.step-item {
+  position: relative;
+  z-index: 2;
+  background: var(--white);
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.step-icon {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--gray-line);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.step-item.completed .step-icon {
+  background: var(--black);
+  border-color: var(--black);
+  color: var(--white);
+}
+
+.step-item.active .step-icon {
+  border-color: var(--gold);
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--gold);
+  border-radius: 50%;
+}
+
+.step-label {
+  font-size: 10px;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.step-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.step-desc {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.step-badge {
+  background: var(--gold);
+  color: var(--white);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.step-item.disabled {
+  opacity: 0.4;
+}
+
+.status-warning-banner {
+  background: #fdf5e6;
+  border: 1px solid #e3c282;
+  color: #785f29;
+  padding: 1rem 1.5rem;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.warning-icon {
+  font-size: 16px;
+}
+
+/* --- Dashboard Grid (2 Columns) --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.dashboard-card {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 2.5rem;
+}
+
+.card-pretitle {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.dashboard-card h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 2rem 0;
+}
+
+/* --- Timeline --- */
+.timeline-container {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--gray-line);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.timeline-item {
+  position: relative;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -1.5rem;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  background: var(--white);
+  border: 2px solid var(--black);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.timeline-item.active .timeline-dot {
+  border-color: var(--gold);
+}
+
+.dark-dot {
+  border-color: var(--black) !important;
+  background: var(--black) !important;
+}
+
+.timeline-date {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-tag {
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.gray-tag {
+  color: var(--ink-soft);
+}
+.gold-tag {
+  color: var(--gold);
+}
+.dark-tag {
+  color: var(--black);
+}
+
+.timeline-event {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.event-time {
+  min-width: 50px;
+  color: var(--black);
+}
+
+/* --- E-Card Section --- */
+.ecard-preview-box {
+  background: var(--paper);
+  border: 1px solid var(--gray-line);
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.ecard-pre {
+  font-size: 11px;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.ecard-name {
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 1rem;
+}
+
+.ecard-desc {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.8;
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+.ecard-ref {
+  font-size: 10px;
+  color: var(--gray-line);
+}
+
+.ecard-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-download-ecard {
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+  padding: 0.85rem 1.5rem;
+  font-size: 13px;
+  font-family: "Kanit", sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 2px;
+}
+
+.ecard-note {
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* --- Receipt & Payment --- */
+.payment-card {
+  padding: 2rem;
+}
+
+.payment-title {
+  font-size: 16px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.receipt-row span:last-child {
+  color: var(--black);
+  font-weight: 500;
+}
+
+.receipt-divider {
+  border-top: 1px solid var(--gray-line);
+  margin: 1.5rem 0;
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.receipt-total-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.receipt-total-amount {
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.deposit-box {
+  background: #fdfaf2;
+  border: 1px solid var(--gold);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.deposit-label {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.deposit-desc {
+  font-size: 10px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.deposit-amount {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+.bank-info-box {
+  border: 1px solid var(--gray-line);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.bank-logo {
+  width: 40px;
+  height: 40px;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gray-line);
+}
+
+.bank-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bank-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.bank-name {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bank-acc {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.bank-branch {
+  font-size: 10px;
+  color: var(--ink-soft);
+  letter-spacing: normal;
+}
+
+.promptpay-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 10px;
+  color: var(--gold);
+}
+
+/* --- Upload Area --- */
+.upload-label {
+  font-size: 11px;
+  color: var(--black);
+  margin-bottom: 0.5rem;
+}
+
+.upload-area {
+  border: 1px dashed var(--gray-line);
+  background: var(--paper);
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.upload-area:hover {
+  border-color: var(--gold);
+  background: var(--white);
+}
+
+.upload-icon {
+  font-size: 24px;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+}
+
+.upload-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.upload-desc {
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+.btn-outline-gold {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.85rem;
+  font-size: 13px;
+  font-family: "Kanit", sans-serif;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+  border-radius: 2px;
+}
+
+.btn-outline-gold:hover {
+  background: #fdfaf2;
+}
+
+.btn-solid-black {
+  width: 100%;
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+  padding: 0.85rem;
+  font-size: 13px;
+  font-family: "Kanit", sans-serif;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  border-radius: 2px;
+}
+
+.cancel-link {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cancel-link:hover {
+  color: #ba1a1a;
+}
+
+/* Contact Card */
+.contact-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.contact-icon {
+  font-size: 24px;
+}
+
+.contact-title {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.contact-desc {
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+.contact-phone {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .stepper-container {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .stepper-line {
+    display: none;
+  }
+  .step-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0;
+  }
+  .step-icon {
+    margin-bottom: 0;
+  }
+}

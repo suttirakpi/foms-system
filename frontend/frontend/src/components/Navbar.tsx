@@ -1,4 +1,3 @@
-// src/components/Navbar.tsx
 import React from "react";
 import "./Navbar.css";
 import logoImg from "../assets/logo-removebg.png";
@@ -11,24 +10,29 @@ interface NavbarProps {
   onNavigateLogin?: () => void;
   onNavigateRegister?: () => void;
   onNavigateBooking?: () => void;
-  onLogout?: () => void; // เพิ่มฟังก์ชัน Logout
+  onNavigateDashboard?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentView = "landing",
   isLoggedIn = false,
-  userName = "คุณศรัทธา ภักดี (เจ้าภาพ)",
+  userName = "คุณตูน สุทธิรักษ์ (เจ้าภาพ)",
   onNavigateHome,
   onNavigateLogin,
   onNavigateRegister,
   onNavigateBooking,
+  onNavigateDashboard,
   onLogout,
 }) => {
   const handleBookingClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    if (onNavigateBooking) {
-      onNavigateBooking();
-    }
+    onNavigateBooking?.();
+  };
+
+  const handleDashboardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    onNavigateDashboard?.();
   };
 
   return (
@@ -56,22 +60,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             จองศาลาและแพ็กเกจ
           </a>
+          {/* เมนู "งานของฉัน" บน Navbar */}
+          <a
+            href="/dashboard"
+            onClick={handleDashboardClick}
+            className={currentView === "dashboard" ? "active" : ""}
+          >
+            งานของฉัน
+          </a>
           <a href="#trust">สำหรับเจ้าหน้าที่และทีมงาน</a>
         </nav>
 
         <div className="navbar-actions">
           {isLoggedIn ? (
             <div className="user-profile-badge">
-              <div className="user-status-box">
+              <div
+                className="user-status-box"
+                onClick={onNavigateDashboard}
+                style={{ cursor: "pointer" }}
+                title="ไปที่หน้างานของฉัน"
+              >
                 <span className="status-label">สถานะ:</span>
                 <span className="user-name">{userName}</span>
               </div>
+
               <div
                 className="user-avatar-btn"
                 title="ออกจากระบบ"
                 onClick={onLogout}
               >
-                {/* เปลี่ยนเป็นปุ่ม Logout แทนชั่วคราวเพื่อให้เทสได้ง่าย */}
                 <svg
                   width="18"
                   height="18"
