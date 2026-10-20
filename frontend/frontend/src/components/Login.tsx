@@ -3,7 +3,12 @@ import "./Login.css";
 
 interface LoginProps {
   onSwitchToRegister: () => void;
-  onSuccess: () => void; // 1. เพิ่มบรรทัดนี้
+  onSuccess: (user: {
+    id?: string;
+    _id?: string;
+    name: string;
+    role?: string;
+  }) => void; // รับข้อมูล user จริงจาก DB
 }
 
 export const Login: React.FC<LoginProps> = ({
@@ -35,11 +40,8 @@ export const Login: React.FC<LoginProps> = ({
       if (!response.ok) {
         throw new Error(data.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       }
-
       alert(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ${data.user.name}`);
-
-      // 3. เรียกใช้ฟังก์ชันเปลี่ยนหน้าตรงนี้เลย!
-      onSuccess();
+      onSuccess(data.user);
     } catch (err: any) {
       setError(err.message);
     } finally {

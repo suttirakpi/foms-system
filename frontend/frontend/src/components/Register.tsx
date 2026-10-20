@@ -3,7 +3,12 @@ import "./Register.css";
 
 interface RegisterProps {
   onSwitchToLogin: () => void;
-  onSuccess: () => void;
+  onSuccess: (user: {
+    id?: string;
+    _id?: string;
+    name: string;
+    role?: string;
+  }) => void;
 }
 
 export const Register: React.FC<RegisterProps> = ({
@@ -66,9 +71,7 @@ export const Register: React.FC<RegisterProps> = ({
       }
 
       alert("ลงทะเบียนสำเร็จ! เข้าสู่ระบบเรียบร้อย");
-
-      // เรียกใช้ฟังก์ชันเปลี่ยนหน้าหลังจากสมัครสำเร็จ
-      onSuccess();
+      onSuccess(data.user || { name: formData.name });
     } catch (err: any) {
       setError(err.message);
     } finally {

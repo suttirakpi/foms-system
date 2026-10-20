@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
+import { AuthUser } from "../App";
 import "./Booking.css";
 
 interface BookingProps {
   isLoggedIn?: boolean;
   userName?: string;
+  currentUser?: AuthUser | null;
   onNavigateHome: () => void;
   onNavigateLogin: () => void;
   onNavigateRegister: () => void;
@@ -12,92 +14,105 @@ interface BookingProps {
   onLogout?: () => void;
 }
 
-const MOCK_TEMPLES = [
-  { id: "t1", name: "วัดพระราม ๙ กาญจนาภิเษก" },
-  { id: "t2", name: "วัดมกุฏกษัตริยารามราชวรวิหาร" },
-  { id: "t3", name: "วัดธาตุทอง" },
-];
+interface HallData {
+  _id: string;
+  name: string;
+  capacity: number;
+  pricePerNight: number;
+}
 
-const MOCK_HALLS = {
-  t1: [
-    { id: "h1", name: "ศาลา 1 (ขนาดเล็ก)", capacity: 50, pricePerNight: 2000 },
-    { id: "h2", name: "ศาลา 4 (ยอดนิยม)", capacity: 150, pricePerNight: 4500 },
-  ],
-  t2: [
-    {
-      id: "h3",
-      name: "ศาลาทรงธรรม (ปรับอากาศ)",
-      capacity: 300,
-      pricePerNight: 8000,
-    },
-    { id: "h4", name: "ศาลา 2", capacity: 100, pricePerNight: 3500 },
-  ],
-  t3: [{ id: "h5", name: "ศาลาแสงอรุณ", capacity: 200, pricePerNight: 5500 }],
-};
+interface TempleData {
+  _id: string;
+  name: string;
+  halls: HallData[];
+}
 
-const MOCK_PACKAGES = [
-  {
-    id: "p1",
-    name: "เศรษฐกิจ พอเพียง",
-    basePrice: 15000,
-    snackPerHead: 30,
-    desc: "ชุดพิธีพื้นฐาน พร้อมเครื่องไทยธรรม",
-  },
-  {
-    id: "p2",
-    name: "มาตรฐาน สมเกียรติ",
-    basePrice: 35000,
-    snackPerHead: 50,
-    desc: "บริการครบวงจร พร้อมชุดดอกไม้หน้าหีบมาตรฐาน",
-  },
-  {
-    id: "p3",
-    name: "พรีเมียม ครบวงจร",
-    basePrice: 65000,
-    snackPerHead: 80,
-    desc: "จัดการโดยมัคนายก พร้อมภัตตาหารชั้นเลิศ",
-  },
-];
+interface PackageData {
+  _id: string;
+  name: string;
+  basePrice: number;
+  snackPerHead: number;
+  desc: string;
+}
 
-const MOCK_ADDONS = [
-  { id: "a1", name: "อัปเกรดหีบเย็นรักษาศพ (Cooling Coffin)", price: 8500 },
-  { id: "a2", name: "ชุดดอกไม้ประดับพรีเมียม (Premium Flowers)", price: 4500 },
-  { id: "a3", name: "บริการถ่ายทอดสด (Live Streaming)", price: 3500 },
-];
+interface AddonData {
+  _id: string;
+  name: string;
+  price: number;
+}
 
 export const Booking: React.FC<BookingProps> = ({
   isLoggedIn,
   userName,
+  currentUser,
   onNavigateHome,
   onNavigateLogin,
   onNavigateRegister,
   onNavigateDashboard,
   onLogout,
 }) => {
-  const [selectedTemple, setSelectedTemple] = useState(MOCK_TEMPLES[0].id);
-  const availableHalls = MOCK_HALLS[selectedTemple as keyof typeof MOCK_HALLS];
+  // States สำหรับข้อมูลจาก Database
+  const [temples, setTemples] = useState<TempleData[]>([]);
+  const [packages, setPackages] = useState<PackageData[]>([]);
+  const [addons, setAddons] = useState<AddonData[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const [hall, setHall] = useState(availableHalls[0]);
+  // States สำหรับฟอร์มการจอง
+  const [deceasedName, setDeceasedName] = useState("");
+  const [selectedTempleId, setSelectedTempleId] = useState("");
+  const [hall, setHall] = useState<HallData | null>(null);
   const [startDate, setStartDate] = useState("");
   const [nights, setNights] = useState(3);
   const [guests, setGuests] = useState(100);
-  const [pkg, setPkg] = useState(MOCK_PACKAGES[1]);
+  const [pkg, setPkg] = useState<PackageData | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
-  const [isChecking, setIsChecking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 1. ดึงข้อมูลวัด ศาลา แพ็กเกจ บริการเสริมจาก Database
   useEffect(() => {
-    setHall(MOCK_HALLS[selectedTemple as keyof typeof MOCK_HALLS][0]);
-  }, [selectedTemple]);
+    const fetchMasterData = async () => {
+      try {
+        setLoadingData(true);
+        const res = await fetch("http://localhost:5000/api/master-data");
+        if (!res.ok) throw new Error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+        const data = await res.json();
 
-  const hallTotal = hall.pricePerNight * nights;
-  const snackTotal = pkg.snackPerHead * guests * nights;
-  const addonsTotal = selectedAddons.reduce((sum, addonId) => {
-    const found = MOCK_ADDONS.find((a) => a.id === addonId);
-    return sum + (found ? found.price : 0);
-  }, 0);
-  const grandTotal = hallTotal + pkg.basePrice + snackTotal + addonsTotal;
+        setTemples(data.temples || []);
+        setPackages(data.packages || []);
+        setAddons(data.addons || []);
 
-  const isOverCapacity = guests > hall.capacity;
+        if (data.temples?.length > 0) {
+          setSelectedTempleId(data.temples[0]._id);
+          setHall(data.temples[0].halls?.[0] || null);
+        }
+        if (data.packages?.length > 0) {
+          // เลือกแพ็กเกจมาตรฐานเป็นค่าเริ่มต้น
+          setPkg(data.packages[1] || data.packages[0]);
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchMasterData();
+  }, []);
+
+  const currentTemple = temples.find((t) => t._id === selectedTempleId);
+  const availableHalls = currentTemple ? currentTemple.halls : [];
+
+  // อัปเดตศาลาเมื่อเปลี่ยนวัด
+  const handleTempleChange = (templeId: string) => {
+    setSelectedTempleId(templeId);
+    const foundTemple = temples.find((t) => t._id === templeId);
+    if (foundTemple && foundTemple.halls.length > 0) {
+      setHall(foundTemple.halls[0]);
+    } else {
+      setHall(null);
+    }
+  };
 
   const handleAddonToggle = (id: string) => {
     setSelectedAddons((prev) =>
@@ -105,29 +120,74 @@ export const Booking: React.FC<BookingProps> = ({
     );
   };
 
-  const handleConfirmBooking = () => {
+  // คำนวณราคาแบบเรียลไทม์จากข้อมูลจริงใน DB
+  const hallTotal = (hall?.pricePerNight || 0) * nights;
+  const snackTotal = (pkg?.snackPerHead || 0) * guests * nights;
+  const addonsTotal = selectedAddons.reduce((sum, addonId) => {
+    const found = addons.find((a) => a._id === addonId);
+    return sum + (found ? found.price : 0);
+  }, 0);
+  const grandTotal =
+    hallTotal + (pkg?.basePrice || 0) + snackTotal + addonsTotal;
+
+  const isOverCapacity = hall ? guests > hall.capacity : false;
+
+  // 2. ส่งข้อมูลการจองไปบันทึกลง MongoDB
+  const handleConfirmBooking = async () => {
+    if (!deceasedName.trim()) {
+      alert("กรุณาระบุชื่อ-นามสกุลของผู้วายชนม์");
+      return;
+    }
     if (!startDate) {
       alert("กรุณาระบุวันที่เริ่มต้นพิธีการ");
       return;
     }
+    if (!hall || !pkg) {
+      alert("กรุณาเลือกศาลาและแพ็กเกจ");
+      return;
+    }
 
-    setIsChecking(true);
-    setTimeout(() => {
-      setIsChecking(false);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          hostId: currentUser?._id || currentUser?.id,
+          hostName: currentUser?.name || "เจ้าภาพทั่วไป",
+          deceasedName: deceasedName.trim(),
+          templeId: selectedTempleId,
+          hallId: hall._id,
+          startDate,
+          nights,
+          guests,
+          packageId: pkg._id,
+          addonIds: selectedAddons,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "ไม่สามารถบันทึกการจองได้");
+      }
+
       alert(
-        `✅ ตรวจสอบคิวศาลาสำเร็จ (ไม่มีคิวซ้อนทับ)\n\nส่งคำขอจองเรียบร้อยแล้ว!\nสถานะปัจจุบัน: PENDING\n\nระบบจะพาท่านไปยังหน้า "งานของฉัน" เพื่อติดตามสถานะ`,
+        `✅ บันทึกคำขอจองลงฐานข้อมูลสำเร็จ!\nรหัสอ้างอิง: ${data.bookingRef}\nสถานะปัจจุบัน: ${data.status}`,
       );
+
       if (onNavigateDashboard) {
         onNavigateDashboard();
       } else {
         onNavigateHome();
       }
-    }, 1500);
+    } catch (err: any) {
+      alert(`❌ ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const currentTempleName = MOCK_TEMPLES.find(
-    (t) => t.id === selectedTemple,
-  )?.name;
 
   return (
     <div className="booking-wrapper">
@@ -148,252 +208,280 @@ export const Booking: React.FC<BookingProps> = ({
           <h1>กำหนดพิธีการและจัดเตรียมศาลา</h1>
           <p>
             ระบบประเมินทรัพยากรและค่าใช้จ่ายตามสเกลงานจริง
-            พร้อมตรวจสอบคิวว่างแบบ Real-time
+            พร้อมตรวจสอบคิวว่างจากฐานข้อมูลแบบ Real-time
           </p>
         </div>
       </div>
 
-      <div className="booking-container">
-        <div className="booking-main">
-          <section className="form-section">
-            <div className="section-title">
-              <span className="step-num">01</span>
-              <h2>เลือกวัด ศาลา และวันเวลา</h2>
-            </div>
+      {loadingData ? (
+        <div style={{ textAlign: "center", padding: "4rem" }}>
+          กำลังดึงข้อมูลวัด ศาลา และแพ็กเกจจากฐานข้อมูล...
+        </div>
+      ) : errorMsg ? (
+        <div style={{ textAlign: "center", padding: "4rem", color: "#ba1a1a" }}>
+          {errorMsg}
+        </div>
+      ) : (
+        <div className="booking-container">
+          <div className="booking-main">
+            <section className="form-section">
+              <div className="section-title">
+                <span className="step-num">01</span>
+                <h2>ข้อมูลผู้วายชนม์ เลือกวัด ศาลา และวันเวลา</h2>
+              </div>
 
-            <div className="input-group">
-              <label>ค้นหาและเลือกวัด</label>
-              <select
-                value={selectedTemple}
-                onChange={(e) => setSelectedTemple(e.target.value)}
-                className="clean-input"
-              >
-                {MOCK_TEMPLES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="input-row">
-              <div className="input-group">
-                <label>วันที่เริ่มต้นพิธี (รดน้ำศพ/สวดคืนแรก)</label>
+              <div className="input-group" style={{ marginBottom: "1.25rem" }}>
+                <label>
+                  ชื่อ-นามสกุล ผู้วายชนม์ (สำหรับออกกำหนดการและ E-Card) *
+                </label>
                 <input
-                  type="date"
+                  type="text"
                   className="clean-input"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  placeholder="เช่น คุณพ่อสมเกียรติ ภักดี"
+                  value={deceasedName}
+                  onChange={(e) => setDeceasedName(e.target.value)}
+                  required
                 />
               </div>
+
               <div className="input-group">
-                <label>จำนวนคืนสวดอภิธรรม</label>
-                <div className="radio-group">
-                  {[1, 3, 5, 7].map((n) => (
-                    <button
-                      key={n}
-                      className={`btn-radio ${nights === n ? "active" : ""}`}
-                      onClick={() => setNights(n)}
-                    >
-                      {n} คืน
-                    </button>
+                <label>ค้นหาและเลือกวัด</label>
+                <select
+                  value={selectedTempleId}
+                  onChange={(e) => handleTempleChange(e.target.value)}
+                  className="clean-input"
+                >
+                  {temples.map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.name}
+                    </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="input-row">
+                <div className="input-group">
+                  <label>วันที่เริ่มต้นพิธี (รดน้ำศพ/สวดคืนแรก)</label>
+                  <input
+                    type="date"
+                    className="clean-input"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="input-group">
+                  <label>จำนวนคืนสวดอภิธรรม</label>
+                  <div className="radio-group">
+                    {[1, 3, 5, 7].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`btn-radio ${nights === n ? "active" : ""}`}
+                        onClick={() => setNights(n)}
+                      >
+                        {n} คืน
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <label className="section-subtitle">เลือกศาลาประกอบพิธี</label>
-            <div className="hall-grid">
-              {availableHalls.map((h) => (
-                <div
-                  key={h.id}
-                  className={`hall-card ${hall.id === h.id ? "selected" : ""}`}
-                  onClick={() => setHall(h)}
-                >
-                  <div className="hall-name">{h.name}</div>
-                  <div className="hall-detail">ความจุ: {h.capacity} ท่าน</div>
-                  <div className="hall-price">
-                    ฿{h.pricePerNight.toLocaleString()} / คืน
+              <label className="section-subtitle">เลือกศาลาประกอบพิธี</label>
+              <div className="hall-grid">
+                {availableHalls.map((h) => (
+                  <div
+                    key={h._id}
+                    className={`hall-card ${hall?._id === h._id ? "selected" : ""}`}
+                    onClick={() => setHall(h)}
+                  >
+                    <div className="hall-name">{h.name}</div>
+                    <div className="hall-detail">ความจุ: {h.capacity} ท่าน</div>
+                    <div className="hall-price">
+                      ฿{h.pricePerNight.toLocaleString()} / คืน
+                    </div>
                   </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="form-section">
+              <div className="section-title">
+                <span className="step-num">02</span>
+                <h2>จำนวนผู้ร่วมพิธี (Dynamic Scaling)</h2>
+              </div>
+              <p className="section-desc">
+                คำนวณสำหรับจัดเตรียมพื้นที่ เก้าอี้ และชุดอาหารว่าง
+              </p>
+
+              <div className="slider-container">
+                <div className="slider-header">
+                  <span>จำนวนแขกเฉลี่ยต่อคืน</span>
+                  <span className="guest-value">{guests} ท่าน</span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="form-section">
-            <div className="section-title">
-              <span className="step-num">02</span>
-              <h2>จำนวนผู้ร่วมพิธี (Dynamic Scaling)</h2>
-            </div>
-            <p className="section-desc">
-              คำนวณสำหรับจัดเตรียมพื้นที่ เก้าอี้ และชุดอาหารว่าง
-              (ปรับแก้ไขจำนวนแขกหน้างานได้)
-            </p>
-
-            <div className="slider-container">
-              <div className="slider-header">
-                <span>จำนวนแขกเฉลี่ยต่อคืน</span>
-                <span className="guest-value">{guests} ท่าน</span>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="500"
-                step="10"
-                value={guests}
-                onChange={(e) => setGuests(Number(e.target.value))}
-                className="guest-slider"
-              />
-              <div className="slider-labels">
-                <span>10</span>
-                <span>250</span>
-                <span>500+</span>
-              </div>
-            </div>
-
-            {isOverCapacity && (
-              <div className="capacity-warning">
-                ⚠️ <strong>ระบบแจ้งเตือนความจุ:</strong> ศาลาที่ท่านเลือกจุได้{" "}
-                {hall.capacity} ท่าน
-                ระบบจะส่งรายงานให้ทีมงานพิจารณาเพิ่มเต็นท์และเก้าอี้เสริมพื้นที่ด้านนอก
-                (ท่านสามารถกดยืนยันจองต่อได้ตามปกติ)
-              </div>
-            )}
-          </section>
-
-          <section className="form-section">
-            <div className="section-title">
-              <span className="step-num">03</span>
-              <h2>แพ็กเกจพิธีสวดและบริการ</h2>
-            </div>
-            <div className="pkg-grid-form">
-              {MOCK_PACKAGES.map((p) => (
-                <div
-                  key={p.id}
-                  className={`pkg-card-form ${pkg.id === p.id ? "selected" : ""}`}
-                  onClick={() => setPkg(p)}
-                >
-                  <div className="pkg-name">{p.name}</div>
-                  <div className="pkg-base-price">
-                    ราคาฐาน ฿{p.basePrice.toLocaleString()}
-                  </div>
-                  <p>{p.desc}</p>
-                  <div className="pkg-snack-rate">
-                    + ค่ารับรอง ฿{p.snackPerHead}/ท่าน/คืน
-                  </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="500"
+                  step="10"
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className="guest-slider"
+                />
+                <div className="slider-labels">
+                  <span>10</span>
+                  <span>250</span>
+                  <span>500+</span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="form-section">
-            <div className="section-title">
-              <span className="step-num">04</span>
-              <h2>บริการเสริมพิเศษ (Add-ons)</h2>
-            </div>
-            <div className="addons-list">
-              {MOCK_ADDONS.map((addon) => (
-                <label key={addon.id} className="addon-item">
-                  <div className="addon-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedAddons.includes(addon.id)}
-                      onChange={() => handleAddonToggle(addon.id)}
-                    />
-                    <span>{addon.name}</span>
-                  </div>
-                  <div className="addon-price">
-                    +฿{addon.price.toLocaleString()}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <div className="booking-sidebar">
-          <div className="ledger-card">
-            <h3>สรุปรายการการจองพิธี</h3>
-
-            <div className="ledger-section">
-              <h4>สถานที่และกำหนดการ</h4>
-              <div className="ledger-row">
-                <span>วัด:</span>
-                <span className="text-right">{currentTempleName}</span>
-              </div>
-              <div className="ledger-row">
-                <span>ศาลา:</span>
-                <span className="text-right">{hall.name}</span>
-              </div>
-              <div className="ledger-row">
-                <span>ระยะเวลา:</span>
-                <span className="text-right">{nights} คืน</span>
-              </div>
-              <div className="ledger-row">
-                <span>จำนวนแขกเฉลี่ย:</span>
-                <span
-                  className={`text-right ${isOverCapacity ? "text-warning" : ""}`}
-                >
-                  {guests} ท่าน/คืน
-                </span>
-              </div>
-            </div>
-
-            <div className="ledger-section">
-              <h4>รายละเอียดค่าใช้จ่าย (ประเมิน)</h4>
-              <div className="ledger-row">
-                <span>ค่าบำรุงศาลา ({nights} คืน)</span>
-                <span>฿{hallTotal.toLocaleString()}</span>
-              </div>
-              <div className="ledger-row">
-                <span>แพ็กเกจ: {pkg.name}</span>
-                <span>฿{pkg.basePrice.toLocaleString()}</span>
-              </div>
-              <div className="ledger-row sub-row">
-                <span>
-                  ↳ ค่ารับรอง (฿{pkg.snackPerHead} × {guests}คน × {nights}คืน)
-                </span>
-                <span>฿{snackTotal.toLocaleString()}</span>
               </div>
 
-              {selectedAddons.length > 0 && (
-                <>
-                  <div className="ledger-divider" />
-                  {selectedAddons.map((id) => {
-                    const a = MOCK_ADDONS.find((x) => x.id === id);
-                    return a ? (
-                      <div className="ledger-row" key={id}>
-                        <span>{a.name}</span>
-                        <span>฿{a.price.toLocaleString()}</span>
-                      </div>
-                    ) : null;
-                  })}
-                </>
+              {isOverCapacity && hall && (
+                <div className="capacity-warning">
+                  ⚠️ <strong>ระบบแจ้งเตือนความจุ:</strong> ศาลาที่ท่านเลือกจุได้{" "}
+                  {hall.capacity} ท่าน
+                  ระบบจะส่งรายงานให้ทีมงานพิจารณาเพิ่มเต็นท์และเก้าอี้เสริมพื้นที่ด้านนอก
+                </div>
               )}
-            </div>
+            </section>
 
-            <div className="ledger-total">
-              <div className="total-label">ยอดประเมินราคาเบื้องต้น</div>
-              <div className="total-amount">฿{grandTotal.toLocaleString()}</div>
-              <div className="total-note">
-                *ยังไม่ต้องชำระเงิน ระบบจะทำรายการล็อกคิวศาลา (Conflict
-                Detection) เมื่อวัดอนุมัติ (CONFIRMED)
-                จึงจะเปิดระบบรับชำระเงินและแนบสลิป
+            <section className="form-section">
+              <div className="section-title">
+                <span className="step-num">03</span>
+                <h2>แพ็กเกจพิธีสวดและบริการ</h2>
               </div>
-            </div>
+              <div className="pkg-grid-form">
+                {packages.map((p) => (
+                  <div
+                    key={p._id}
+                    className={`pkg-card-form ${pkg?._id === p._id ? "selected" : ""}`}
+                    onClick={() => setPkg(p)}
+                  >
+                    <div className="pkg-name">{p.name}</div>
+                    <div className="pkg-base-price">
+                      ราคาฐาน ฿{p.basePrice.toLocaleString()}
+                    </div>
+                    <p>{p.desc}</p>
+                    <div className="pkg-snack-rate">
+                      + ค่ารับรอง ฿{p.snackPerHead}/ท่าน/คืน
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            <button
-              className="btn-confirm-booking"
-              onClick={handleConfirmBooking}
-              disabled={isChecking}
-            >
-              {isChecking
-                ? "⏳ กำลังล็อกคิวศาลา..."
-                : "ส่งคำขอจองศาลา (PENDING) ➔"}
-            </button>
+            <section className="form-section">
+              <div className="section-title">
+                <span className="step-num">04</span>
+                <h2>บริการเสริมพิเศษ (Add-ons)</h2>
+              </div>
+              <div className="addons-list">
+                {addons.map((addon) => (
+                  <label key={addon._id} className="addon-item">
+                    <div className="addon-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedAddons.includes(addon._id)}
+                        onChange={() => handleAddonToggle(addon._id)}
+                      />
+                      <span>{addon.name}</span>
+                    </div>
+                    <div className="addon-price">
+                      +฿{addon.price.toLocaleString()}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="booking-sidebar">
+            <div className="ledger-card">
+              <h3>สรุปรายการการจองพิธี</h3>
+
+              <div className="ledger-section">
+                <h4>สถานที่และกำหนดการ</h4>
+                <div className="ledger-row">
+                  <span>ผู้วายชนม์:</span>
+                  <span className="text-right">{deceasedName || "-"}</span>
+                </div>
+                <div className="ledger-row">
+                  <span>วัด:</span>
+                  <span className="text-right">{currentTemple?.name}</span>
+                </div>
+                <div className="ledger-row">
+                  <span>ศาลา:</span>
+                  <span className="text-right">{hall?.name}</span>
+                </div>
+                <div className="ledger-row">
+                  <span>ระยะเวลา:</span>
+                  <span className="text-right">{nights} คืน</span>
+                </div>
+                <div className="ledger-row">
+                  <span>จำนวนแขกเฉลี่ย:</span>
+                  <span
+                    className={`text-right ${isOverCapacity ? "text-warning" : ""}`}
+                  >
+                    {guests} ท่าน/คืน
+                  </span>
+                </div>
+              </div>
+
+              <div className="ledger-section">
+                <h4>รายละเอียดค่าใช้จ่าย (ประเมิน)</h4>
+                <div className="ledger-row">
+                  <span>ค่าบำรุงศาลา ({nights} คืน)</span>
+                  <span>฿{hallTotal.toLocaleString()}</span>
+                </div>
+                <div className="ledger-row">
+                  <span>แพ็กเกจ: {pkg?.name}</span>
+                  <span>฿{(pkg?.basePrice || 0).toLocaleString()}</span>
+                </div>
+                <div className="ledger-row sub-row">
+                  <span>
+                    ↳ ค่ารับรอง (฿{pkg?.snackPerHead} × {guests}คน × {nights}
+                    คืน)
+                  </span>
+                  <span>฿{snackTotal.toLocaleString()}</span>
+                </div>
+
+                {selectedAddons.length > 0 && (
+                  <>
+                    <div className="ledger-divider" />
+                    {selectedAddons.map((id) => {
+                      const a = addons.find((x) => x._id === id);
+                      return a ? (
+                        <div className="ledger-row" key={id}>
+                          <span>{a.name}</span>
+                          <span>฿{a.price.toLocaleString()}</span>
+                        </div>
+                      ) : null;
+                    })}
+                  </>
+                )}
+              </div>
+
+              <div className="ledger-total">
+                <div className="total-label">ยอดประเมินราคาเบื้องต้น</div>
+                <div className="total-amount">
+                  ฿{grandTotal.toLocaleString()}
+                </div>
+                <div className="total-note">
+                  *ระบบจะตรวจสอบคิวศาลาซ้อนทับในฐานข้อมูลทันทีเมื่อกดยืนยัน
+                </div>
+              </div>
+
+              <button
+                className="btn-confirm-booking"
+                onClick={handleConfirmBooking}
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "⏳ กำลังตรวจสอบคิวและบันทึกข้อมูล..."
+                  : "ส่งคำขอจองศาลา (PENDING) ➔"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { LandingPage } from "./components/LandingPage";
@@ -8,13 +8,31 @@ import { Booking } from "./components/Booking";
 import { HostDashboard } from "./components/HostDashboard";
 import "./index.css";
 
+export interface AuthUser {
+  id?: string;
+  _id?: string;
+  name: string;
+  role?: string;
+}
+
 export function App() {
   const [currentView, setCurrentView] = useState<
     "landing" | "login" | "register" | "booking" | "dashboard"
   >("landing");
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+
+  // ดึงสถานะผู้ใช้ที่เคยล็อกอินไว้เมื่อเปิดหน้าเว็บ
+  useEffect(() => {
+    const savedUser = localStorage.getItem("foms_user");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem("foms_user");
+      }
+    }
+  }, []);
 
   const navigateTo = (
     view: "landing" | "login" | "register" | "booking" | "dashboard",
@@ -23,28 +41,39 @@ export function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleAuthSuccess = () => {
-    setIsLoggedIn(true);
-    setUserName("คุณตูน สุทธิรักษ์ (เจ้าภาพ)");
-    navigateTo("dashboard");
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserName("");
+  const handleAuthSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    localStorage.setItem("foms_user", JSON.stringify(user));
     navigateTo("landing");
   };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // กรณีไม่มี endpoint logout ให้เคลียร์ฝั่ง client ตามปกติ
+    }
+    setCurrentUser(null);
+    localStorage.removeItem("foms_user");
+    navigateTo("landing");
+  };
+
+  const isLoggedIn = Boolean(currentUser);
+  const displayUserName = currentUser ? `${currentUser.name} (เจ้าภาพ)` : "";
 
   return (
     <div className="app-container">
       {currentView === "landing" && (
         <LandingPage
           isLoggedIn={isLoggedIn}
-          userName={userName}
+          userName={displayUserName}
           onNavigateToLogin={() => navigateTo("login")}
           onNavigateToRegister={() => navigateTo("register")}
           onNavigateBooking={() => navigateTo("booking")}
-          onNavigateDashboard={() => navigateTo("dashboard")} // 👈 ส่งคำสั่งไปที่นี่
+          onNavigateDashboard={() => navigateTo("dashboard")}
           onLogout={handleLogout}
         />
       )}
@@ -54,12 +83,12 @@ export function App() {
           <Navbar
             currentView={currentView}
             isLoggedIn={isLoggedIn}
-            userName={userName}
+            userName={displayUserName}
             onNavigateHome={() => navigateTo("landing")}
             onNavigateLogin={() => navigateTo("login")}
             onNavigateRegister={() => navigateTo("register")}
             onNavigateBooking={() => navigateTo("booking")}
-            onNavigateDashboard={() => navigateTo("dashboard")} // 👈 ส่งคำสั่งไปที่นี่
+            onNavigateDashboard={() => navigateTo("dashboard")}
             onLogout={handleLogout}
           />
           <Login
@@ -75,12 +104,12 @@ export function App() {
           <Navbar
             currentView={currentView}
             isLoggedIn={isLoggedIn}
-            userName={userName}
+            userName={displayUserName}
             onNavigateHome={() => navigateTo("landing")}
             onNavigateLogin={() => navigateTo("login")}
             onNavigateRegister={() => navigateTo("register")}
             onNavigateBooking={() => navigateTo("booking")}
-            onNavigateDashboard={() => navigateTo("dashboard")} // 👈 ส่งคำสั่งไปที่นี่
+            onNavigateDashboard={() => navigateTo("dashboard")}
             onLogout={handleLogout}
           />
           <Register
@@ -94,11 +123,12 @@ export function App() {
       {currentView === "booking" && (
         <Booking
           isLoggedIn={isLoggedIn}
-          userName={userName}
+          userName={displayUserName}
+          currentUser={currentUser}
           onNavigateHome={() => navigateTo("landing")}
           onNavigateLogin={() => navigateTo("login")}
           onNavigateRegister={() => navigateTo("register")}
-          onNavigateDashboard={() => navigateTo("dashboard")} // 👈 ส่งคำสั่งไปที่นี่ (ถ้า Booking.tsx มีเรียกใช้ Navbar)
+          onNavigateDashboard={() => navigateTo("dashboard")}
           onLogout={handleLogout}
         />
       )}
@@ -106,12 +136,13 @@ export function App() {
       {currentView === "dashboard" && (
         <HostDashboard
           isLoggedIn={isLoggedIn}
-          userName={userName}
+          userName={displayUserName}
+          currentUser={currentUser}
           onNavigateHome={() => navigateTo("landing")}
           onNavigateLogin={() => navigateTo("login")}
           onNavigateRegister={() => navigateTo("register")}
           onNavigateBooking={() => navigateTo("booking")}
-          onNavigateDashboard={() => navigateTo("dashboard")} // 👈 ส่งคำสั่งไปที่นี่
+          onNavigateDashboard={() => navigateTo("dashboard")}
           onLogout={handleLogout}
         />
       )}
