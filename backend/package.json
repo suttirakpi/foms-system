@@ -2,7 +2,7 @@
   "name": "foms-backend",
   "version": "0.2.0",
   "private": true,
-  "description": "FOMS backend (รวมโค้ดต้นแบบของตูน + schema กลางของทีม)",
+  "description": "FOMS backend",
   "main": "server.js",
   "scripts": {
     "start": "node src/server.js",
