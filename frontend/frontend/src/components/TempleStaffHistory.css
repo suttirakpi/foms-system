@@ -1,0 +1,643 @@
+/* src/components/TempleStaffHistory.css */
+.his-wrapper {
+  background-color: var(--paper);
+  min-height: 100vh;
+  color: var(--black);
+}
+
+.his-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 2.5rem;
+  box-sizing: border-box;
+}
+
+.his-breadcrumb {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.his-breadcrumb strong {
+  color: var(--black);
+  font-weight: 500;
+}
+
+.his-link {
+  cursor: pointer;
+}
+
+.his-link:hover {
+  color: var(--gold);
+}
+
+.his-archive-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.his-archive-tag {
+  font-weight: 500;
+  color: #6f5b27;
+  background: #f1ede2;
+  border: 1px solid var(--gray-line);
+  padding: 0.3rem 0.6rem;
+  letter-spacing: 0.03em;
+}
+
+.his-archive-note {
+  color: var(--ink-soft);
+}
+
+.his-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.1rem 0 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--gray-line);
+}
+
+.his-title {
+  font-size: 30px;
+  font-weight: 400;
+  margin: 0 0 0.6rem;
+}
+
+.his-title small {
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.his-subtitle {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+  max-width: 700px;
+  line-height: 1.7;
+}
+
+.his-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 0.8rem 1.2rem;
+  cursor: pointer;
+}
+
+.his-btn.dark {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.his-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.his-stat {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 1.1rem 1.3rem;
+}
+
+.his-stat-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.his-stat-top i {
+  font-style: normal;
+  color: var(--ink-soft);
+}
+
+.his-stat-value {
+  font-size: 30px;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.his-stat-value small {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.his-stat strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.his-stat-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 11px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--gray-line);
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+}
+
+.his-stat-foot em {
+  font-style: normal;
+  font-weight: 500;
+  color: #6f5b27;
+  white-space: nowrap;
+}
+
+.his-toolbar {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.his-search {
+  flex: 1;
+  min-width: 260px;
+  border: 1px solid var(--gray-line);
+  background: var(--paper);
+  padding: 0.8rem 1rem;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.his-field-btn,
+.his-select {
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid var(--gray-line);
+  background: var(--white);
+  padding: 0 1rem;
+  height: 100%;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.his-field-btn {
+  font-size: 12px;
+}
+
+.his-refresh {
+  width: 44px;
+  background: var(--white);
+  border: 1px solid var(--black);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.his-pop-anchor {
+  position: relative;
+  display: flex;
+}
+
+.his-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: 300px;
+  background: var(--white);
+  border: 1px solid var(--black);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 1rem;
+}
+
+.his-pop.narrow {
+  width: 240px;
+  padding: 0.4rem;
+}
+
+.his-pop-right {
+  left: auto;
+  right: 0;
+}
+
+.his-pop-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.his-pop-field {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 0.75rem;
+}
+
+.his-pop-field input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.3rem;
+  padding: 0.5rem;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--gray-line);
+  background: var(--paper);
+}
+
+.his-pop-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.his-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  background: none;
+  border: none;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+}
+
+.his-menu-item:hover {
+  background: var(--paper);
+}
+
+.his-table-card {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  margin-bottom: 1.5rem;
+}
+
+.his-table-scroll {
+  overflow-x: auto;
+}
+
+.his-table {
+  width: 100%;
+  min-width: 1150px;
+  border-collapse: collapse;
+}
+
+.his-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding: 1rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--gray-line);
+}
+
+.his-table td {
+  padding: 1.1rem 1rem;
+  border-bottom: 1px solid var(--gray-line);
+  vertical-align: top;
+  font-size: 12px;
+}
+
+.his-table .r {
+  text-align: right;
+}
+
+.his-ref {
+  width: 130px;
+}
+
+.his-ref b {
+  display: block;
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.his-ref span {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+.his-strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.his-strong.strike {
+  text-decoration: line-through;
+}
+
+.his-muted {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+.his-tag {
+  display: inline-block;
+  font-size: 10px;
+  background: #efede8;
+  padding: 0.25rem 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.his-price {
+  font-size: 11px;
+  color: #6f5b27;
+  margin-top: 0.3rem;
+}
+
+.his-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--gray-line);
+}
+
+.his-status.completed {
+  background: #fbf6e9;
+  border-color: var(--gold);
+  color: #6f5b27;
+}
+
+.his-status.cancelled {
+  background: #efede8;
+  color: var(--ink-soft);
+}
+
+.his-detail {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6f5b27;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.his-detail.plain {
+  color: var(--black);
+}
+
+.his-detail:hover {
+  text-decoration: underline;
+}
+
+.his-empty {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--ink-soft);
+}
+
+.his-pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.his-pager b {
+  color: var(--black);
+}
+
+.his-pages {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.his-pages button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 32px;
+  height: 32px;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  cursor: pointer;
+}
+
+.his-pages button.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.his-pages button:disabled {
+  color: #b5b3ad;
+  cursor: default;
+}
+
+.his-pages .dots {
+  font-size: 12px;
+  padding: 0 0.2rem;
+}
+
+.his-gov {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  padding: 1.25rem 1.5rem;
+}
+
+.his-gov-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f0eb;
+  border: 1px solid var(--gray-line);
+  font-size: 20px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.his-gov-text {
+  flex: 1;
+}
+
+.his-gov-text strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.his-gov-tag {
+  font-size: 10px;
+  color: #6f5b27;
+  border: 1px solid var(--gold);
+  background: #fbf6e9;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.4rem;
+}
+
+.his-gov-text p {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0.4rem 0 0;
+  line-height: 1.7;
+}
+
+.his-gov-side {
+  display: flex;
+  gap: 1.5rem;
+  border-left: 1px solid var(--gray-line);
+  padding-left: 1.5rem;
+  font-size: 11px;
+}
+
+.his-gov-side span {
+  display: block;
+  color: var(--ink-soft);
+  margin-bottom: 0.3rem;
+}
+
+.his-gov-side b {
+  font-weight: 500;
+}
+
+.his-blackbar {
+  height: 42px;
+  background: var(--black);
+}
+
+.his-footer {
+  background: var(--white);
+}
+
+.his-footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 1.5rem;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.his-footer-inner strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--black);
+}
+
+.his-footer-inner p {
+  margin: 0.6rem 0 0;
+}
+
+.his-dot {
+  color: var(--gold);
+}
+
+@media (max-width: 900px) {
+  .his-footer-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.his-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 1rem;
+}
+
+.his-modal {
+  background: var(--white);
+  width: 520px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.his-modal h2 {
+  font-size: 17px;
+  font-weight: 500;
+  margin: 0 0 1rem;
+}
+
+.his-modal dl {
+  margin: 0;
+  font-size: 12px;
+}
+
+.his-modal dl div {
+  display: flex;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--gray-line);
+}
+
+.his-modal dt {
+  width: 100px;
+  flex-shrink: 0;
+  color: var(--ink-soft);
+}
+
+.his-modal dd {
+  margin: 0;
+}
+
+.his-modal-note {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin: 0.8rem 0 0;
+}
+
+.his-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.his-toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  background: var(--black);
+  color: var(--white);
+  font-size: 12px;
+  padding: 0.8rem 1.2rem;
+  z-index: 70;
+}
+
+@media print {
+  .staff-nav,
+  .his-toolbar,
+  .his-pop-anchor,
+  .his-pager,
+  .his-detail,
+  .his-toast {
+    display: none !important;
+  }
+}

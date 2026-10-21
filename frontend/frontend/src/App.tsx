@@ -6,6 +6,10 @@ import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { Booking } from "./components/Booking";
 import { HostDashboard } from "./components/HostDashboard";
+import { TempleStaffApprovals } from "./components/TempleStaffApprovals";
+import { TempleStaffCalendar } from "./components/TempleStaffCalendar";
+import { TempleStaffInventory } from "./components/TempleStaffInventory";
+import { TempleStaffHistory } from "./components/TempleStaffHistory";
 import "./index.css";
 
 export interface AuthUser {
@@ -17,8 +21,19 @@ export interface AuthUser {
 
 export function App() {
   const [currentView, setCurrentView] = useState<
-    "landing" | "login" | "register" | "booking" | "dashboard"
-  >("landing");
+    "landing" | "login" | "register" | "booking" | "dashboard" | "staff" | "staffCalendar" | "staffInventory" | "staffHistory"
+  >(
+    // TODO: ลบทางลัดดูหน้า staff ตอนยังไม่ต่อ API (เปิดด้วย /#staff เฉพาะตอน dev)
+    import.meta.env.DEV && window.location.hash === "#staff"
+      ? "staff"
+      : import.meta.env.DEV && window.location.hash === "#calendar"
+        ? "staffCalendar"
+        : import.meta.env.DEV && window.location.hash === "#inventory"
+          ? "staffInventory"
+          : import.meta.env.DEV && window.location.hash === "#history"
+            ? "staffHistory"
+            : "landing",
+  );
 
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
@@ -35,7 +50,7 @@ export function App() {
   }, []);
 
   const navigateTo = (
-    view: "landing" | "login" | "register" | "booking" | "dashboard",
+    view: "landing" | "login" | "register" | "booking" | "dashboard" | "staff" | "staffCalendar" | "staffInventory" | "staffHistory",
   ) => {
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -44,7 +59,7 @@ export function App() {
   const handleAuthSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     localStorage.setItem("foms_user", JSON.stringify(user));
-    navigateTo("landing");
+    navigateTo(user.role === "STAFF" ? "staff" : "landing");
   };
 
   const handleLogout = async () => {
@@ -143,6 +158,54 @@ export function App() {
           onNavigateRegister={() => navigateTo("register")}
           onNavigateBooking={() => navigateTo("booking")}
           onNavigateDashboard={() => navigateTo("dashboard")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staff" && (
+        <TempleStaffApprovals
+          isLoggedIn={isLoggedIn}
+          userName={displayUserName}
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateLogin={() => navigateTo("login")}
+          onNavigateRegister={() => navigateTo("register")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffCalendar" && (
+        <TempleStaffCalendar
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffInventory" && (
+        <TempleStaffInventory
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffHistory" && (
+        <TempleStaffHistory
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
           onLogout={handleLogout}
         />
       )}
