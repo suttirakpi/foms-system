@@ -6,6 +6,8 @@ import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { Booking } from "./components/Booking";
 import { HostDashboard } from "./components/HostDashboard";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { OrganizerBoard } from "./components/OrganizerBoard";
 import "./index.css";
 
 export interface AuthUser {
@@ -15,11 +17,23 @@ export interface AuthUser {
   role?: string;
 }
 
-export function App() {
-  const [currentView, setCurrentView] = useState<
-    "landing" | "login" | "register" | "booking" | "dashboard"
-  >("landing");
+type View =
+  | "landing"
+  | "login"
+  | "register"
+  | "booking"
+  | "dashboard"
+  | "admin"
+  | "organizer";
 
+const isOrganizerRole = (role?: string) =>
+  role === "organizer" || role === "operations";
+
+const homeViewFor = (role?: string): View =>
+  role === "admin" ? "admin" : isOrganizerRole(role) ? "organizer" : "landing";
+
+export function App() {
+  const [currentView, setCurrentView] = useState<View>("landing");
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   // ดึงสถานะผู้ใช้ที่เคยล็อกอินไว้เมื่อเปิดหน้าเว็บ
@@ -27,16 +41,16 @@ export function App() {
     const savedUser = localStorage.getItem("foms_user");
     if (savedUser) {
       try {
-        setCurrentUser(JSON.parse(savedUser));
+        const user = JSON.parse(savedUser) as AuthUser;
+        setCurrentUser(user);
+        setCurrentView(homeViewFor(user.role));
       } catch {
         localStorage.removeItem("foms_user");
       }
     }
   }, []);
 
-  const navigateTo = (
-    view: "landing" | "login" | "register" | "booking" | "dashboard",
-  ) => {
+  const navigateTo = (view: View) => {
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -44,12 +58,12 @@ export function App() {
   const handleAuthSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     localStorage.setItem("foms_user", JSON.stringify(user));
-    navigateTo("landing");
+    navigateTo(homeViewFor(user.role));
   };
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/auth/logout", {
+      await fetch("http://localhost:5001/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -62,7 +76,10 @@ export function App() {
   };
 
   const isLoggedIn = Boolean(currentUser);
-  const displayUserName = currentUser ? `${currentUser.name} (เจ้าภาพ)` : "";
+  const isAdmin = currentUser?.role === "admin";
+  const isOrganizer = isOrganizerRole(currentUser?.role);
+  const roleLabel = isAdmin ? "ผู้ดูแลระบบ" : isOrganizer ? "ผู้ประสานงาน" : "เจ้าภาพ";
+  const displayUserName = currentUser ? `${currentUser.name} (${roleLabel})` : "";
 
   return (
     <div className="app-container">
@@ -146,6 +163,34 @@ export function App() {
           onLogout={handleLogout}
         />
       )}
+
+      {currentView === "admin" &&
+        (isAdmin ? (
+          <AdminDashboard
+            currentUser={currentUser}
+            onNavigateHome={() => navigateTo("landing")}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <div className="admin-denied">
+            <p>ไม่มีสิทธิ์เข้าถึงหน้านี้</p>
+            <button onClick={() => navigateTo("login")}>ไปหน้าเข้าสู่ระบบ</button>
+          </div>
+        ))}
+
+      {currentView === "organizer" &&
+        (isOrganizer || isAdmin ? (
+          <OrganizerBoard
+            currentUser={currentUser}
+            onNavigateHome={() => navigateTo("landing")}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <div className="admin-denied">
+            <p>ไม่มีสิทธิ์เข้าถึงหน้านี้</p>
+            <button onClick={() => navigateTo("login")}>ไปหน้าเข้าสู่ระบบ</button>
+          </div>
+        ))}
     </div>
   );
 }
