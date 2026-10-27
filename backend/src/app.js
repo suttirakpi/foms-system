@@ -1,25 +1,42 @@
-// app.js - ตั้งค่า Express (แยกจาก server.js เพื่อให้เขียนเทสต์ได้)
-// ถ้าโปรเจกต์ของท่านมี server.js เดิมอยู่แล้ว ให้เทียบกับไฟล์นี้: ต้องมี cors(credentials), cookieParser และต่อ route ตามด้านล่าง
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
-const bookingRoutes = require("./routes/bookingRoutes");
 
 const app = express();
 
-const origins = (
-  process.env.CLIENT_ORIGIN || "http://localhost:5173,http://localhost:3000"
-)
-  .split(",")
-  .map((s) => s.trim());
-app.use(cors({ origin: origins, credentials: true }));
+// 1. เชื่อมต่อฐานข้อมูล MongoDB
+connectDB();
+
+// 2. Middlewares Setup
+// ปรับ CORS ให้รองรับทั้ง localhost และ 127.0.0.1 บน Port 5173
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // สำหรับรองรับ form-data / URL encoded
 app.use(cookieParser());
 
+// 3. API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api", bookingRoutes);
-app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// Health Check Route
+app.get("/", (req, res) => {
+  res.send("FOMS Backend is running successfully!");
+});
+
+// 4. Global Error Handler (ดักจับ Error ป้องกัน Server แครชเมื่อยิง API ผิดพลาด)
+app.use((err, req, res, next) => {
+  console.error("Backend Error Stack:", err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? err : {},
+  });
+});
 
 module.exports = app;
