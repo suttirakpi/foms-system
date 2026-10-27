@@ -43,7 +43,10 @@ interface CalEvent {
 
 // ข้อมูลตัวอย่างสำหรับขึ้นหน้าจอ รอเชื่อม API ปฏิทินของเจ้าหน้าที่วัด
 const MONKS: Record<string, { name: string; detail: string }> = {
-  m1: { name: "พระครูสิทธิสุตมนศีลคุณ", detail: "ประธานสงฆ์ · ผู้ช่วยเจ้าอาวาส" },
+  m1: {
+    name: "พระครูสิทธิสุตมนศีลคุณ",
+    detail: "ประธานสงฆ์ · ผู้ช่วยเจ้าอาวาส",
+  },
   m2: { name: "พระมหาธีรพัฒน์ ญาณโร", detail: "พระอันดับ ๒ · กฎี ๓" },
   m3: { name: "พระสมุห์ชิต ฐิตเมโธ", detail: "พระอันดับ ๓ · กฎี ๔" },
   m4: { name: "พระมหาอานนท์ กนฺตสีโล", detail: "พระอันดับ (ป.ธ.๔) · กฎี ๕" },
@@ -54,7 +57,10 @@ const MONKS: Record<string, { name: string; detail: string }> = {
   m9: { name: "พระวิชัย อนาลโย", detail: "กฎี ๗ (พร้อม)" },
   m10: { name: "พระมหากฤษณ์ วรปญฺโญ", detail: "เปรียญธรรม ๙ ประโยค" },
   m11: { name: "พระมหาชวินทร์ ปญฺญาวชิโร", detail: "เปรียญธรรม ๗ ประโยค" },
-  m12: { name: "พระสมุห์กิตติศักดิ์ ฐานาภรโณ", detail: "ฐานานุกรมเจ้าคณะอำเภอ" },
+  m12: {
+    name: "พระสมุห์กิตติศักดิ์ ฐานาภรโณ",
+    detail: "ฐานานุกรมเจ้าคณะอำเภอ",
+  },
   m13: { name: "พระภิกษุเอกภูมิ ญาณรสโม", detail: "พระธรรมกถึกประจำคืน" },
 };
 
@@ -208,7 +214,13 @@ const INITIAL_EVENTS: CalEvent[] = [
   ),
 ];
 
-const HALL_FILTERS: HallFilter[] = ["ALL", "ศาลา 1", "ศาลา 2", "ศาลา 3", "เมรุหลวง"];
+const HALL_FILTERS: HallFilter[] = [
+  "ALL",
+  "ศาลา 1",
+  "ศาลา 2",
+  "ศาลา 3",
+  "เมรุหลวง",
+];
 const HALLS_ONLY: HallKey[] = ["ศาลา 1", "ศาลา 2", "ศาลา 3"];
 
 const TH_MONTHS = [
@@ -239,7 +251,8 @@ const TH_DAYS_FULL = [
 const thDigits = (v: number | string) =>
   String(v).replace(/\d/g, (d) => "๐๑๒๓๔๕๖๗๘๙"[Number(d)]);
 const pad = (n: number) => String(n).padStart(2, "0");
-const toISO = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
+const toISO = (y: number, m: number, d: number) =>
+  `${y}-${pad(m + 1)}-${pad(d)}`;
 const dayDiff = (a: string, b: string) =>
   Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
 const parseISO = (iso: string) => {
@@ -330,7 +343,9 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
           : e,
       ),
     );
-    flash(`จัด ${MONKS[spare].name} แทนเรียบร้อย (ข้อมูลจำลอง ยังไม่บันทึกลงระบบ)`);
+    flash(
+      `จัด ${MONKS[spare].name} แทนเรียบร้อย (ข้อมูลจำลอง ยังไม่บันทึกลงระบบ)`,
+    );
   };
 
   const reassignAll = () => {
@@ -370,7 +385,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
   const dayInfo = (d: number) => {
     const iso = toISO(month.y, month.m, d);
     const list = events.filter(
-      (e) => isActiveOn(e, iso) && (hallFilter === "ALL" || e.hall === hallFilter),
+      (e) =>
+        isActiveOn(e, iso) && (hallFilter === "ALL" || e.hall === hallFilter),
     );
     return { iso, list };
   };
@@ -395,7 +411,9 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
 
   // การ์ดสรุปด้านบน (คำนวณจากวันที่เลือก)
   const activeAll = events.filter((e) => isActiveOn(e, selected));
-  const hallsOpen = HALLS_ONLY.filter((h) => activeAll.some((e) => e.hall === h)).length;
+  const hallsOpen = HALLS_ONLY.filter((h) =>
+    activeAll.some((e) => e.hall === h),
+  ).length;
   const monkSet = new Set(
     activeAll.flatMap((e) => e.monks.filter((m): m is string => m !== null)),
   );
@@ -467,7 +485,9 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
               className="cal-btn dark"
               type="button"
               onClick={() =>
-                flash("ส่งคำขอนิมนต์พระสงฆ์ด่วนแล้ว (ข้อมูลจำลอง ยังไม่เชื่อมระบบ)")
+                flash(
+                  "ส่งคำขอนิมนต์พระสงฆ์ด่วนแล้ว (ข้อมูลจำลอง ยังไม่เชื่อมระบบ)",
+                )
               }
             >
               นิมนต์พระสงฆ์ด่วน
@@ -480,7 +500,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
         <div className="cal-stat">
           <span className="cal-stat-label">ศาลาเปิดงานนี้</span>
           <div className="cal-stat-value">
-            {hallsOpen} <small>/ 3 หลัง {hallsOpen === 3 ? "(เต็ม)" : ""}</small>
+            {hallsOpen}{" "}
+            <small>/ 3 หลัง {hallsOpen === 3 ? "(เต็ม)" : ""}</small>
           </div>
         </div>
         <div className="cal-stat">
@@ -559,7 +580,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                 </div>
               ))}
               {cells.map((d, i) => {
-                if (d === null) return <div key={`x${i}`} className="cal-cell empty" />;
+                if (d === null)
+                  return <div key={`x${i}`} className="cal-cell empty" />;
                 const { iso, list } = dayInfo(d);
                 const isSel = iso === selected;
                 const hasConflict =
@@ -651,8 +673,9 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
               กำหนดการและคิวพระสงฆ์ประจำวัน — {selTitle.replace("ที่ ", " ")}
             </h2>
             <span className="cal-pill">
-              ผังทั้งหมด {dayEvents.filter((e) => e.hall !== "เมรุหลวง").length} ศาลา
-              + {dayEvents.filter((e) => e.hall === "เมรุหลวง").length} เมรุ
+              ผังทั้งหมด {dayEvents.filter((e) => e.hall !== "เมรุหลวง").length}{" "}
+              ศาลา + {dayEvents.filter((e) => e.hall === "เมรุหลวง").length}{" "}
+              เมรุ
             </span>
           </div>
 
@@ -660,18 +683,24 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
             <div className="cal-alert">
               <div className="cal-alert-body">
                 <strong>
-                  พบข้อขัดแย้ง: คิวพระสงฆ์ซ้ำซ้อน (Conflict Warning: Double Booking
-                  Detected)
+                  พบข้อขัดแย้ง: คิวพระสงฆ์ซ้ำซ้อน (Conflict Warning: Double
+                  Booking Detected)
                 </strong>
                 {conflicts.map((c) => (
                   <p key={c.monkId + c.time}>
                     <b>{MONKS[c.monkId].name}</b> ได้รับนิมนต์สวดพระอภิธรรมเวลา{" "}
                     <b>{c.time} น.</b> ซ้ำกันระหว่าง{" "}
-                    {c.events.map((e) => `${e.hallFull} (${e.deceased})`).join(" และ ")}
+                    {c.events
+                      .map((e) => `${e.hallFull} (${e.deceased})`)
+                      .join(" และ ")}
                   </p>
                 ))}
                 <div className="cal-alert-actions">
-                  <button type="button" className="cal-btn dark" onClick={reassignAll}>
+                  <button
+                    type="button"
+                    className="cal-btn dark"
+                    onClick={reassignAll}
+                  >
                     เปลี่ยนพระสงฆ์ทดแทน (Reassign)
                   </button>
                   <button
@@ -717,7 +746,13 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                   </div>
                   {hasConflict ? (
                     <span className="cal-status bad">
-                      ⚠ มีพระสงฆ์ติดซ้อน {conflicts.filter((c) => c.events.some((x) => x.id === e.id)).length} รูป
+                      ⚠ มีพระสงฆ์ติดซ้อน{" "}
+                      {
+                        conflicts.filter((c) =>
+                          c.events.some((x) => x.id === e.id),
+                        ).length
+                      }{" "}
+                      รูป
                     </span>
                   ) : vacancies > 0 ? (
                     <span className="cal-status bad">
@@ -762,7 +797,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                   <>
                     <div className="cal-monk-head">
                       <span className="cal-kicker">
-                        บัญชีรายนามพระสงฆ์สวดพระอภิธรรม ({thDigits(e.monks.length)} รูป)
+                        บัญชีรายนามพระสงฆ์สวดพระอภิธรรม (
+                        {thDigits(e.monks.length)} รูป)
                       </span>
                       <span>ประจำกฎี คณะ ๑</span>
                     </div>
@@ -784,7 +820,10 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                             </div>
                           );
                         return (
-                          <div key={m + i} className={`cal-monk ${bad ? "bad" : ""}`}>
+                          <div
+                            key={m + i}
+                            className={`cal-monk ${bad ? "bad" : ""}`}
+                          >
                             <b>
                               {MONKS[m].name} {bad ? "⚠" : ""}
                             </b>
@@ -818,21 +857,36 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
 
       <section className="cal-rules">
         <div>
-          <strong>ข้อกำหนดและระเบียบการจัดเวรกิจนิมนต์พระสงฆ์ สำนักงานวัดศรีสุคต พระอารามหลวง</strong>
-          <p>๑. การนิมนต์และสับเปลี่ยนพระสงฆ์ต้องดำเนินการล่วงหน้าไม่น้อยกว่า ๖ ชั่วโมง เพื่อให้เจ้าหน้าที่แจ้งกฎีสามารถทำได้ทันถูกต้องตามแนวระเบียบ</p>
-          <p>๒. เมื่อมีการอนุมัติหรือสับเปลี่ยนเวร ระบบ FOMS จะส่งการแจ้งเตือน SMS อัตโนมัติไปยังพระสงฆ์ผู้รับกิจนิมนต์ทันที</p>
+          <strong>
+            ข้อกำหนดและระเบียบการจัดเวรกิจนิมนต์พระสงฆ์ สำนักงานวัดศรีสุคต
+            พระอารามหลวง
+          </strong>
+          <p>
+            ๑. การนิมนต์และสับเปลี่ยนพระสงฆ์ต้องดำเนินการล่วงหน้าไม่น้อยกว่า ๖
+            ชั่วโมง เพื่อให้เจ้าหน้าที่แจ้งกฎีสามารถทำได้ทันถูกต้องตามแนวระเบียบ
+          </p>
+          <p>
+            ๒. เมื่อมีการอนุมัติหรือสับเปลี่ยนเวร ระบบ FOMS จะส่งการแจ้งเตือน
+            SMS อัตโนมัติไปยังพระสงฆ์ผู้รับกิจนิมนต์ทันที
+          </p>
         </div>
         <div className="cal-rules-side">
           <span>เจ้าหน้าที่รับเวรประจำวัน</span>
           <strong>พระมหาธีรพัฒน์ / นายสุรเชษฐ์</strong>
-          <button type="button" className="cal-btn" onClick={() => window.print()}>
+          <button
+            type="button"
+            className="cal-btn"
+            onClick={() => window.print()}
+          >
             พิมพ์ใบบัญชีเวรสงฆ์
           </button>
         </div>
       </section>
 
       <footer className="cal-footer">
-        <span>ระบบบริหารจัดการกิจการฌาปนสถาน (FOMS) วัดศรีสุคต พระอารามหลวง</span>
+        <span>
+          ระบบบริหารจัดการกิจการฌาปนสถาน (FOMS) วัดศรีสุคต พระอารามหลวง
+        </span>
         <span>ติดต่อกรณีเร่งด่วนสำนักงานศาสนสมบัติ: 02-XXX-XXXX ต่อ 101</span>
         <span>การคุ้มครองข้อมูล (PDPA Compliant)</span>
         <strong>สงวนลิขสิทธิ์ พ.ศ. ๒๕๖๙</strong>
