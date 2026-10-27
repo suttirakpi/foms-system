@@ -8,6 +8,10 @@ import { Booking } from "./components/Booking";
 import { HostDashboard } from "./components/HostDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { OrganizerBoard } from "./components/OrganizerBoard";
+import { TempleStaffApprovals } from "./components/TempleStaffApprovals";
+import { TempleStaffCalendar } from "./components/TempleStaffCalendar";
+import { TempleStaffInventory } from "./components/TempleStaffInventory";
+import { TempleStaffHistory } from "./components/TempleStaffHistory";
 import "./index.css";
 
 export interface AuthUser {
@@ -24,16 +28,39 @@ type View =
   | "booking"
   | "dashboard"
   | "admin"
-  | "organizer";
+  | "organizer"
+  | "staff"
+  | "staffCalendar"
+  | "staffInventory"
+  | "staffHistory";
 
+// ย้าย Helper functions ออกมาไว้นอก App() เพื่อความเป็นระเบียบ
 const isOrganizerRole = (role?: string) =>
   role === "organizer" || role === "operations";
 
+// อัปเดตให้เช็ค role "STAFF" เพื่อพุ่งไปหน้า staff ได้ถูกต้อง
 const homeViewFor = (role?: string): View =>
-  role === "admin" ? "admin" : isOrganizerRole(role) ? "organizer" : "landing";
+  role === "admin"
+    ? "admin"
+    : isOrganizerRole(role)
+      ? "organizer"
+      : role === "STAFF"
+        ? "staff"
+        : "landing";
 
 export function App() {
-  const [currentView, setCurrentView] = useState<View>("landing");
+  // รวม State ทั้งหมดไว้ที่จุดเดียว
+  const [currentView, setCurrentView] = useState<View>(
+    import.meta.env.DEV && window.location.hash === "#staff"
+      ? "staff"
+      : import.meta.env.DEV && window.location.hash === "#calendar"
+        ? "staffCalendar"
+        : import.meta.env.DEV && window.location.hash === "#inventory"
+          ? "staffInventory"
+          : import.meta.env.DEV && window.location.hash === "#history"
+            ? "staffHistory"
+            : "landing",
+  );
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   // ดึงสถานะผู้ใช้ที่เคยล็อกอินไว้เมื่อเปิดหน้าเว็บ
@@ -78,8 +105,20 @@ export function App() {
   const isLoggedIn = Boolean(currentUser);
   const isAdmin = currentUser?.role === "admin";
   const isOrganizer = isOrganizerRole(currentUser?.role);
-  const roleLabel = isAdmin ? "ผู้ดูแลระบบ" : isOrganizer ? "ผู้ประสานงาน" : "เจ้าภาพ";
-  const displayUserName = currentUser ? `${currentUser.name} (${roleLabel})` : "";
+  const isStaff = currentUser?.role === "STAFF"; // เช็คสถานะว่าเป็นพนักงานวัดหรือไม่
+
+  // เพิ่มการแสดงผล Label (เจ้าหน้าที่วัด)
+  const roleLabel = isAdmin
+    ? "ผู้ดูแลระบบ"
+    : isOrganizer
+      ? "ผู้ประสานงาน"
+      : isStaff
+        ? "เจ้าหน้าที่วัด"
+        : "เจ้าภาพ";
+
+  const displayUserName = currentUser
+    ? `${currentUser.name} (${roleLabel})`
+    : "";
 
   return (
     <div className="app-container">
@@ -174,7 +213,9 @@ export function App() {
         ) : (
           <div className="admin-denied">
             <p>ไม่มีสิทธิ์เข้าถึงหน้านี้</p>
-            <button onClick={() => navigateTo("login")}>ไปหน้าเข้าสู่ระบบ</button>
+            <button onClick={() => navigateTo("login")}>
+              ไปหน้าเข้าสู่ระบบ
+            </button>
           </div>
         ))}
 
@@ -188,9 +229,59 @@ export function App() {
         ) : (
           <div className="admin-denied">
             <p>ไม่มีสิทธิ์เข้าถึงหน้านี้</p>
-            <button onClick={() => navigateTo("login")}>ไปหน้าเข้าสู่ระบบ</button>
+            <button onClick={() => navigateTo("login")}>
+              ไปหน้าเข้าสู่ระบบ
+            </button>
           </div>
         ))}
+
+      {currentView === "staff" && (
+        <TempleStaffApprovals
+          isLoggedIn={isLoggedIn}
+          userName={displayUserName}
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateLogin={() => navigateTo("login")}
+          onNavigateRegister={() => navigateTo("register")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffCalendar" && (
+        <TempleStaffCalendar
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffInventory" && (
+        <TempleStaffInventory
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateHistory={() => navigateTo("staffHistory")}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === "staffHistory" && (
+        <TempleStaffHistory
+          currentUser={currentUser}
+          onNavigateHome={() => navigateTo("landing")}
+          onNavigateApprovals={() => navigateTo("staff")}
+          onNavigateCalendar={() => navigateTo("staffCalendar")}
+          onNavigateInventory={() => navigateTo("staffInventory")}
+          onLogout={handleLogout}
+        />
+      )}
     </div>
   );
 }
