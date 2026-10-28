@@ -116,7 +116,7 @@ const bookingSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["UNPAID", "SLIP_UPLOADED", "PAID"],
+      enum: ["UNPAID", "SLIP_UPLOADED", "PARTIAL", "PAID"], // PARTIAL = อนุมัติบางงวด (เพิ่มใหม่)
       default: "UNPAID",
     }, // เพิ่มใหม่
     paymentSlipUrl: { type: String, default: "" },

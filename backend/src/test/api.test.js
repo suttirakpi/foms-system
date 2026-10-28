@@ -10,6 +10,15 @@ const { syncAllIndexes } = require("../models");
 const { Temple, Package } = require("../models/FuneralModels");
 const { ensureMasterData } = require("../seed/masterData");
 const { addDays, todayInBangkok } = require("../utils/dates");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User");
+const {
+  Person,
+  PersonAssignment,
+  ScheduleItem,
+  TempleRule,
+} = require("../models");
+const { isBuddhistDay } = require("../utils/buddhistDays");
 
 const TEST_URI =
   process.env.MONGO_TEST_URI || "mongodb://127.0.0.1:27017/foms_test";
@@ -50,6 +59,29 @@ const bookingBody = (over = {}) => ({
   addonIds: [],
   ...over,
 });
+
+// ทีมงาน (STAFF) — สร้างตรงใน DB เพราะหน้าสมัครบังคับให้เป็น HOST เสมอ
+async function staffLogin() {
+  await User.updateOne(
+    { phone: "0800000002" },
+    {
+      $setOnInsert: {
+        name: "ทีมงานทดสอบ",
+        phone: "0800000002",
+        password: await bcrypt.hash("password123", 10),
+        role: "STAFF",
+        pdpaConsent: true,
+        isActive: true,
+      },
+    },
+    { upsert: true },
+  );
+  const l = await api("POST", "/api/auth/login", {
+    body: { identifier: "0800000002", password: "password123" },
+  });
+  assert.equal(l.status, 200, JSON.stringify(l.data));
+  return l.cookie;
+}
 
 before(async () => {
   await connectDB(TEST_URI);
@@ -355,4 +387,219 @@ test("แนบสลิป: เจ้าของแนบได้ / ต้อ
     ).status,
     400,
   );
+});
+
+// ===== ===== กำหนดการพิธี (Schedule Generator) ===== =====
+let schedBookingId; // งานที่ใช้ทดสอบชุดนี้ (เก็บไว้ให้เทสต์ถัด ๆ ไปใช้ร่วม)
+
+test("สูตรวันพระ: ขึ้น/แรม 8 และ 15 ค่ำ ตรงปฏิทินทางการ (เคส ±1 ที่ยอมรับไว้)", () => {
+  assert.equal(isBuddhistDay("2025-07-10"), true, "อาสาฬหบูชา 2568 (ขึ้น 15)");
+  assert.equal(isBuddhistDay("2025-07-11"), false, "เข้าพรรษา = แรม 1 ค่ำ");
+  assert.equal(isBuddhistDay("2025-07-03"), true, "ขึ้น 8 ค่ำ (myhora)");
+  assert.equal(isBuddhistDay("2025-07-18"), true, "แรม 8 ค่ำ (myhora)");
+  assert.equal(isBuddhistDay("2025-07-04"), false, "วันถัดจากขึ้น 8");
+  assert.equal(isBuddhistDay("2026-03-03"), true, "มาฆบูชา 2569");
+  assert.equal(isBuddhistDay("2026-01-26"), true, "ขึ้น 8 ค่ำ 2569");
+});
+
+test("สร้างกำหนดการ: รายการครบตามสูตร + เวลา default + generate ซ้ำแทนที่ของเดิม", async () => {
+  const host = await api("POST", "/api/auth/login", {
+    body: { identifier: "0811111111", password: "password123" },
+  });
+  const created = await api("POST", "/api/bookings", {
+    cookie: host.cookie,
+    body: bookingBody({ startDate: day(200), nights: 3 }),
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  schedBookingId = created.data._id;
+
+  const staff = await staffLogin();
+  const r = await api("POST", `/api/bookings/${schedBookingId}/schedule/generate`, {
+    cookie: staff,
+  });
+  assert.equal(r.status, 201, JSON.stringify(r.data));
+  assert.equal(r.data.count, 8, "1 สรงน้ำ + 3 สวด + 1 ฌาปนกิจ + 3 ทำบุญ");
+  assert.ok(Array.isArray(r.data.warnings));
+
+  // ชนิด/วันที่/เวลา ของแต่ละรายการ (ยังไม่มี TempleRule → ใช้ default)
+  const pick = (type, date) =>
+    r.data.items.find((i) => i.type === type && i.date === date);
+  assert.equal(pick("BATHING", day(200)).time, "16:00");
+  for (const [n, d] of [[1, day(200)], [2, day(201)], [3, day(202)]]) {
+    const chant = r.data.items.find((i) => i.type === "CHANT" && i.date === d);
+    assert.ok(chant, `ต้องมีสวดคืนที่ ${n}`);
+    assert.equal(chant.time, "19:00");
+  }
+  assert.equal(pick("CREMATION", day(203)).time, "10:00", "ฌาปนกิจ = startDate + 3 คืน");
+  // ทำบุญ 7/50/100 — นับวันฌาปนกิจเป็นวันที่ 1 (CREMATION_DAY_IS_DAY_1)
+  assert.equal(pick("MERIT", day(209)).title, "ทำบุญอุทิศส่วนกุศล 7 วัน");
+  assert.equal(pick("MERIT", day(252)).title, "ทำบุญอุทิศส่วนกุศล 50 วัน");
+  assert.equal(pick("MERIT", day(302)).title, "ทำบุญอุทิศส่วนกุศล 100 วัน");
+
+  // generate ซ้ำ = แทนที่ของเดิม ห้ามมีรายการซ้ำ
+  const again = await api("POST", `/api/bookings/${schedBookingId}/schedule/generate`, {
+    cookie: staff,
+  });
+  assert.equal(again.status, 201);
+  assert.equal(again.data.count, 8);
+  assert.equal(await ScheduleItem.countDocuments({ bookingId: schedBookingId }), 8);
+
+  // GET: เรียงตามวันที่ + join ชื่อพระจาก PersonAssignment
+  const monk = await Person.create({
+    templeId: temple._id,
+    type: "MONK",
+    name: "พระมหาทดสอบกำหนดการ",
+  });
+  await PersonAssignment.create({
+    personId: monk._id,
+    bookingId: schedBookingId,
+    date: day(201),
+    role: "CHANT",
+  });
+  const g = await api("GET", `/api/bookings/${schedBookingId}/schedule`, {
+    cookie: host.cookie,
+  });
+  assert.equal(g.status, 200);
+  assert.deepEqual(
+    g.data.items.map((i) => i.date),
+    [day(200), day(200), day(201), day(202), day(203), day(209), day(252), day(302)],
+  );
+  const chantDay2 = g.data.items.find((i) => i.date === day(201));
+  assert.equal(chantDay2.persons.length, 1);
+  assert.equal(chantDay2.persons[0].name, "พระมหาทดสอบกำหนดการ");
+  assert.equal(chantDay2.persons[0].role, "CHANT");
+  assert.deepEqual(
+    g.data.items.find((i) => i.type === "BATHING").persons,
+    [],
+    "วันอื่นไม่มีคน",
+  );
+});
+
+test("วันฌาปนกิจตรงวันพระ: ได้ 201 พร้อม warnings[] + เวลา override จาก TempleRule", async () => {
+  // หาวันพระในช่วง day(500)-day(600) ให้เป็นวันฌาปนกิจ (ปลายทาง warning)
+  let wanPhra = null;
+  for (let i = 500; i <= 600 && !wanPhra; i++)
+    if (isBuddhistDay(day(i))) wanPhra = day(i);
+  assert.ok(wanPhra, "ช่วงทดสอบต้องมีวันพระอย่างน้อย 1 วัน");
+
+  await TempleRule.create({
+    templeId: temple._id,
+    key: "NO_CREMATION_ON_BUDDHIST_DAY",
+    value: true,
+    description: "เทสต์",
+  });
+  await TempleRule.create({
+    templeId: temple._id,
+    key: "CREMATION_START_TIME",
+    value: "11:30",
+    description: "เทสต์",
+  });
+
+  const h = await register("0899999999", "คนงานวันพระ");
+  const created = await api("POST", "/api/bookings", {
+    cookie: h.cookie,
+    body: bookingBody({ startDate: addDays(wanPhra, -3), nights: 3 }),
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+
+  const staff = await staffLogin();
+  const r = await api(
+    "POST",
+    `/api/bookings/${created.data._id}/schedule/generate`,
+    { cookie: staff },
+  );
+  assert.equal(r.status, 201, "วันพระเป็นแค่ warning ห้ามบล็อก");
+  const warn = r.data.warnings.find(
+    (w) => w.rule === "NO_CREMATION_ON_BUDDHIST_DAY",
+  );
+  assert.ok(warn, JSON.stringify(r.data.warnings));
+  assert.equal(warn.date, wanPhra);
+  // เวลาจาก TempleRule ต้องแทน default
+  const crem = r.data.items.find((i) => i.type === "CREMATION");
+  assert.equal(crem.time, "11:30");
+});
+
+test("สิทธิ์กำหนดการ: เจ้าภาพสร้าง/แก้ไม่ได้, คนอื่นดูไม่ได้, ทีมงานทำได้ + ตรวจ input", async () => {
+  const host = await api("POST", "/api/auth/login", {
+    body: { identifier: "0811111111", password: "password123" },
+  });
+  const staff = await staffLogin();
+
+  // สร้าง: เจ้าภาพ/ไม่ล็อกอิน ไม่ได้
+  assert.equal(
+    (
+      await api("POST", `/api/bookings/${schedBookingId}/schedule/generate`, {
+        cookie: host.cookie,
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await api("POST", `/api/bookings/${schedBookingId}/schedule/generate`)).status,
+    401,
+  );
+
+  // ดู: เจ้าของได้, คนอื่น/ไม่ล็อกอิน ไม่ได้
+  assert.equal(
+    (await api("GET", `/api/bookings/${schedBookingId}/schedule`, { cookie: host.cookie })).status,
+    200,
+  );
+  const other = await register("0888888888", "คนแปลกหน้า");
+  assert.equal(
+    (await api("GET", `/api/bookings/${schedBookingId}/schedule`, { cookie: other.cookie })).status,
+    403,
+  );
+  assert.equal(
+    (await api("GET", `/api/bookings/${schedBookingId}/schedule`)).status,
+    401,
+  );
+
+  const item = (await ScheduleItem.findOne({ bookingId: schedBookingId }))._id;
+  const url = `/api/schedule-items/${item}`;
+
+  // เจ้าภาพแก้/ลบไม่ได้
+  assert.equal((await api("PATCH", url, { cookie: host.cookie, body: { time: "20:00" } })).status, 403);
+  assert.equal((await api("DELETE", url, { cookie: host.cookie })).status, 403);
+
+  // ทีมงานแก้ได้ / input ผิดต้อง 400
+  const ok = await api("PATCH", url, { cookie: staff, body: { time: "20:30", title: "สวดคืนแรก (แก้ไข)" } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  assert.equal(ok.data.item.time, "20:30");
+  assert.equal(ok.data.item.title, "สวดคืนแรก (แก้ไข)");
+  assert.equal((await api("PATCH", url, { cookie: staff, body: { time: "25:00" } })).status, 400);
+  assert.equal((await api("PATCH", url, { cookie: staff, body: { date: "13-13-2026" } })).status, 400);
+  assert.equal((await api("PATCH", url, { cookie: staff, body: {} })).status, 400);
+  assert.equal((await api("PATCH", "/api/schedule-items/abc", { cookie: staff, body: { time: "12:00" } })).status, 400);
+  assert.equal(
+    (await api("PATCH", "/api/schedule-items/000000000000000000000000", { cookie: staff, body: { time: "12:00" } })).status,
+    404,
+  );
+
+  // ลบ: ทีมงานลบได้ ลบซ้ำ 404 / ไม่ล็อกอิน 401
+  assert.equal((await api("DELETE", url)).status, 401);
+  assert.equal((await api("DELETE", url, { cookie: staff })).status, 200);
+  assert.equal((await api("DELETE", url, { cookie: staff })).status, 404);
+});
+
+test("งานที่ยกเลิกแล้วสร้างกำหนดการไม่ได้ (409)", async () => {
+  const h = await register("0812345678", "คนยกเลิกงาน");
+  const created = await api("POST", "/api/bookings", {
+    cookie: h.cookie,
+    body: bookingBody({ startDate: day(450), nights: 1 }),
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const cancelled = await api("PATCH", `/api/bookings/${created.data._id}/cancel`, {
+    cookie: h.cookie,
+  });
+  assert.equal(cancelled.status, 200);
+
+  const staff = await staffLogin();
+  const r = await api(
+    "POST",
+    `/api/bookings/${created.data._id}/schedule/generate`,
+    { cookie: staff },
+  );
+  assert.equal(r.status, 409);
+  assert.equal(r.data.code, "BOOKING_CANCELLED");
+  assert.equal(await ScheduleItem.countDocuments({ bookingId: created.data._id }), 0);
 });

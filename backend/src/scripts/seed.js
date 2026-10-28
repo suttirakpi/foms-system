@@ -101,6 +101,7 @@ async function main() {
   ]);
 
   await TempleRule.insertMany([
+<<<<<<< Updated upstream
     {
       templeId,
       key: "NO_CREMATION_ON_BUDDHIST_DAY",
@@ -119,6 +120,13 @@ async function main() {
       value: "19:00",
       description: "เวลาเริ่มสวดอภิธรรมของแต่ละคืน",
     },
+=======
+    { templeId, key: "NO_CREMATION_ON_BUDDHIST_DAY", value: true, description: "ไม่ฌาปนกิจวันพระ (เตือนอย่างเดียว ไม่บล็อก)" },
+    { templeId, key: "MERIT_DAY_COUNT_START", value: "CREMATION_DAY_IS_DAY_1", description: "นับวันฌาปนกิจเป็นวันที่ 1 → ทำบุญ 7/50/100 = +6/+49/+99 วัน" },
+    { templeId, key: "CHANT_START_TIME", value: "19:00", description: "เวลาเริ่มสวดอภิธรรมของแต่ละคืน" },
+    { templeId, key: "BATHING_START_TIME", value: "16:00", description: "เวลาเริ่มพิธีสรงน้ำศพ" },
+    { templeId, key: "CREMATION_START_TIME", value: "10:00", description: "เวลาเริ่มพิธีฌาปนกิจ" },
+>>>>>>> Stashed changes
   ]);
 
   // งานตัวอย่าง 1 งาน ล็อกศาลา 1 ไว้ 3 คืน ไว้ทดสอบการชน

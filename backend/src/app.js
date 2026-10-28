@@ -3,6 +3,14 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+<<<<<<< Updated upstream
+=======
+const bookingRoutes = require("./routes/bookingRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const pricingRoutes = require("./routes/pricingRoutes");
+const scheduleRoutes = require("./routes/scheduleRoutes");
+const { AppError } = require("./utils/pricing");
+>>>>>>> Stashed changes
 
 const app = express();
 
@@ -24,6 +32,7 @@ app.use(cookieParser());
 
 // 3. API Routes
 app.use("/api/auth", authRoutes);
+<<<<<<< Updated upstream
 
 // Health Check Route
 app.get("/", (req, res) => {
@@ -40,3 +49,32 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+=======
+app.use("/api", bookingRoutes);
+app.use("/api", paymentRoutes);
+app.use("/api", pricingRoutes);
+app.use("/api", scheduleRoutes);
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// error middleware ตัวสุดท้าย: แปลง error ทุกชนิดเป็น JSON ให้ client หน้าเดียว
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err instanceof AppError)
+    return res
+      .status(err.status)
+      .json({ code: err.code, message: err.message });
+  if (err.name === "MulterError")
+    return res.status(400).json({
+      code: "INVALID_FILE",
+      message: "อัปโหลดไฟล์ไม่สำเร็จ (ไฟล์ใหญ่เกิน 5MB หรือส่งผิดช่อง)",
+    });
+  if (err.name === "CastError")
+    return res
+      .status(400)
+      .json({ code: "INVALID_ID", message: "รหัสอ้างอิงไม่ถูกต้อง" });
+  console.error(err);
+  res.status(500).json({ code: "SERVER_ERROR", message: "เกิดข้อผิดพลาดในระบบ" });
+});
+
+module.exports = app;
+>>>>>>> Stashed changes
