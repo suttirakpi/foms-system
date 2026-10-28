@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { AuthUser } from "../App";
 import "./Booking.css";
+import { API_URL } from "../config";
 
 interface BookingProps {
   isLoggedIn?: boolean;
@@ -74,7 +75,7 @@ export const Booking: React.FC<BookingProps> = ({
     const fetchMasterData = async () => {
       try {
         setLoadingData(true);
-        const res = await fetch("http://localhost:5000/api/master-data");
+        const res = await fetch(`${API_URL}/api/master-data`);
         if (!res.ok) throw new Error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
         const data = await res.json();
 
@@ -149,7 +150,7 @@ export const Booking: React.FC<BookingProps> = ({
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/bookings", {
+      const response = await fetch(`${API_URL}/api/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

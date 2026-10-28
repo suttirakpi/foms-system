@@ -13,6 +13,7 @@ import { TempleStaffCalendar } from "./components/TempleStaffCalendar";
 import { TempleStaffInventory } from "./components/TempleStaffInventory";
 import { TempleStaffHistory } from "./components/TempleStaffHistory";
 import "./index.css";
+import { API_URL } from "./config";
 
 export interface AuthUser {
   id?: string;
@@ -90,7 +91,7 @@ export function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5001/api/auth/logout", {
+      await fetch(`${API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

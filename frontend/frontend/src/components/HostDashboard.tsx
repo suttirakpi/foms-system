@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { AuthUser } from "../App";
 import "./HostDashboard.css";
+import { API_URL } from "../config";
 
 interface HostDashboardProps {
   isLoggedIn?: boolean;
@@ -67,7 +68,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
       }
 
       const res = await fetch(
-        `http://localhost:5000/api/bookings/my?${query.toString()}`,
+        `${API_URL}/api/bookings/my?${query.toString()}`,
         { credentials: "include" },
       );
       const data = await res.json();
@@ -107,15 +108,12 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/bookings/${booking._id}/slip`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ paymentSlipUrl: slipFileName }),
-        },
-      );
+      const res = await fetch(`${API_URL}/api/bookings/${booking._id}/slip`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ paymentSlipUrl: slipFileName }),
+      });
       if (!res.ok) throw new Error("ส่งหลักฐานไม่สำเร็จ");
       const updated = await res.json();
       setBooking(updated);
@@ -131,13 +129,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     if (!window.confirm("ยืนยันการยกเลิกคำขอจองศาลานี้ใช่หรือไม่?")) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/bookings/${booking._id}/cancel`,
-        {
-          method: "PATCH",
-          credentials: "include",
-        },
-      );
+      const res = await fetch(`${API_URL}/api/bookings/${booking._id}/cancel`, {
+        method: "PATCH",
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("ยกเลิกไม่สำเร็จ");
       const updated = await res.json();
       setBooking(updated);
