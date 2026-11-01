@@ -1,0 +1,16 @@
+stateDiagram-v2
+direction TB
+
+state "wait<br/>รอคิว" as S_wait
+state "active<br/>กำลังดำเนินการ" as S_active
+state "done<br/>เสร็จแล้ว<br/>(บันทึกผู้ติ๊ก+เวลา)" as S_done
+
+[*] --> S_wait : กด "เริ่มงานวันนี้"<br/>สร้างขั้นตอนจากแม่แบบ
+S_wait --> S_active : ขั้นแรกทันทีที่สร้าง<br/>ขั้นถัดไปเมื่อขั้นก่อนหน้าเสร็จ
+S_active --> S_done : ติ๊กเสร็จ<br/>(ติ๊กซ้ำหรือข้ามคิวไม่ได้)
+S_done --> [*]
+
+note right of S_active
+  แต่ละคืนมีขั้นที่ active ได้ครั้งละ 1 ขั้น
+  ติ๊กขั้นแรกแล้วสถานะงานเป็น IN_PROGRESS
+end note

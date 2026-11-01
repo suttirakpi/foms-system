@@ -1,0 +1,9 @@
+stateDiagram-v2
+direction TB
+
+state "Active<br/>เปิดใช้งาน" as M_on
+state "Inactive<br/>ระงับ<br/>(ซ่อนจากหน้าจอง/รายการจัดพระ)" as M_off
+
+[*] --> M_on : แอดมินเพิ่มรายการ<br/>(แพ็กเกจ / ตัวเลือกเสริม / รายชื่อพระ)
+M_on --> M_off : ระงับ
+M_off --> M_on : เปิดใช้งาน

@@ -1,0 +1,9 @@
+stateDiagram-v2
+direction TB
+
+state "Active<br/>ใช้งานได้" as U_on
+state "Suspended<br/>ระงับ<br/>(เข้าสู่ระบบไม่ได้<br/>เซสชันเดิมใช้ไม่ได้ทันที)" as U_off
+
+[*] --> U_on : สมัครเอง (HOST)<br/>หรือแอดมินสร้างบัญชี
+U_on --> U_off : แอดมินระงับ<br/>(ระงับตัวเองไม่ได้)
+U_off --> U_on : แอดมินเปิดใช้งาน

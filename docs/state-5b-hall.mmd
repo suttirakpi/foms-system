@@ -1,0 +1,9 @@
+stateDiagram-v2
+direction TB
+
+state "Open<br/>เปิดใช้งาน" as H_on
+state "Suspended<br/>ระงับ<br/>(เจ้าภาพรายใหม่จองไม่ได้)" as H_off
+
+[*] --> H_on : แอดมินเพิ่มศาลา
+H_on --> H_off : ระงับ<br/>(ถ้ามีงานค้าง ต้องยืนยันซ้ำ)
+H_off --> H_on : เปิดใช้งาน

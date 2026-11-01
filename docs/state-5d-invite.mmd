@@ -1,0 +1,16 @@
+stateDiagram-v2
+direction TB
+
+state "NoLink<br/>ยังไม่มีลิงก์" as L_none
+state "Active<br/>ลิงก์ใช้ได้<br/>(ไม่ต้องล็อกอิน)" as L_on
+state "Revoked<br/>ถูกยกเลิก<br/>(ลิงก์เดิมเปิดไม่ได้)" as L_off
+
+[*] --> L_none
+L_none --> L_on : เจ้าภาพกด<br/>"สร้างลิงก์บัตรเชิญ"
+L_on --> L_off : เจ้าภาพยกเลิกลิงก์
+L_off --> L_on : สร้างใหม่<br/>(ได้โทเคนใหม่)
+
+note right of L_on
+  ถ้างานถูกยกเลิก ลิงก์จะเปิดดูไม่ได้
+  และสร้างลิงก์ใหม่ไม่ได้
+end note

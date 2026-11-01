@@ -1,0 +1,16 @@
+stateDiagram-v2
+direction TB
+
+state "SHIPPING<br/>กำลังจัดส่ง" as V_ship
+state "ARRIVED<br/>ของถึงลานจอดแล้ว" as V_arr
+state "RECEIVED<br/>ตรวจรับแล้ว<br/>(มีเลขใบตรวจรับ+ผู้ตรวจ)" as V_rec
+
+[*] --> V_ship : เพิ่มรายการ<br/>หรือสร้างจากตัวเลือกที่เจ้าภาพเลือก
+V_ship --> V_arr : แจ้งของถึง
+V_arr --> V_rec : ตรวจรับและลงนาม
+V_ship --> V_rec : ตรวจรับทันที
+V_rec --> [*]
+
+note right of V_rec
+  ตรวจรับแล้วย้อนสถานะไม่ได้
+end note
