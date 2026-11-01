@@ -1,5 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AuthUser } from "../App";
+import {
+  ApiError, OpsAssignment, OpsBoard, OpsEnvelope, OpsJob, OpsPerson, OpsStep, OpsSummary, OpsVendor, ROLE_LABEL,
+  STATUS_LABEL, ScheduleList, TYPE_LABEL, VendorStatus, baht, errMsg, hhmm, opsFetch, pad, thDate,
+} from "../opsApi";
 import "./OrganizerBoard.css";
 
 interface OrganizerBoardProps {
@@ -8,130 +12,8 @@ interface OrganizerBoardProps {
   onLogout: () => void;
 }
 
-type StepStatus = "done" | "active" | "next" | "wait";
-
-interface Step {
-  n: number;
-  time: string;
-  range: string;
-  title: string;
-  desc: string;
-  status: StepStatus;
-  doneNote?: string;
-}
-
-interface Vendor {
-  id: string;
-  category: string;
-  title: string;
-  partner: string;
-  timeLabel: string;
-  timeValue: string;
-  timeGold?: boolean;
-  detail: string;
-  status: "received" | "arrived" | "shipping";
-  urgent?: boolean;
-  footLeft?: { icon: "camera" | "bolt" | "truck"; text: string };
-  ref?: string;
-}
-
-const INITIAL_STEPS: Step[] = [
-  {
-    n: 1, time: "16:30 น.", range: "16:30 – 17:00 น.",
-    title: "จัดตั้งโต๊ะหมู่บูชาและเครื่องไทยธรรมประจำจุดพระสงฆ์ 4 รูป",
-    desc: "", status: "done",
-    doneNote: "บันทึกยืนยันเมื่อ 16:32 น. โดย นายเอกชัย (หัวหน้าจัดสถานที่)",
-  },
-  {
-    n: 2, time: "17:15 น.", range: "17:15 – 18:00 น.",
-    title: "ตรวจรับและติดตั้งชุดดอกไม้สดประดับหน้าหีบศพโทนขาว-ทอง",
-    desc: "", status: "done",
-    doneNote: "บันทึกยืนยันเมื่อ 17:18 น. โดย ร้านมาลัยพิสุทธิ์ (ผู้จัดส่ง) & คุณศิริพร",
-  },
-  {
-    n: 3, time: "18:15 น.", range: "18:15 – 18:50 น.",
-    title: "เปิดศาลาปรับอากาศ ต้อนรับครอบครัวเจ้าภาพและจัดเตรียมของว่าง",
-    desc: "เจ้าหน้าที่อำนวยความสะดวก: คุณศิริพร สุวรรณโชติ และทีมต้อนรับชุดที่ 1",
-    status: "active",
-  },
-  {
-    n: 4, time: "18:45 น.", range: "18:45 – 19:00 น.",
-    title: "นิมนต์พระภิกษุสงฆ์ 4 รูป ขึ้นสู่อาสน์สงฆ์ และจัดเตรียมเครื่องไทยธรรม",
-    desc: "มัคนายกประสิทธิ์นำเทียนอาราธนาธรรม และจัดเตรียมที่นั่งประธานพิธีสงฆ์",
-    status: "next",
-  },
-  {
-    n: 5, time: "19:00 น.", range: "19:00 – 19:45 น.",
-    title: "พิธีสวดพระอภิธรรม 7 คัมภีร์ 4 จบ โดย พระสงฆ์คณะกุฎี 6",
-    desc: "จุดรูปเทียนบูชาพระรัตนตรัย ธูปเทียนหน้าตู้พระอภิธรรม และหน้าศพ",
-    status: "wait",
-  },
-  {
-    n: 6, time: "19:45 น.", range: "19:45 – 20:15 น.",
-    title: "เจ้าภาพทอดผ้าบังสุกุล ถวายจตุปัจจัยไทยธรรม กรวดน้ำรับพร",
-    desc: "เจ้าหน้าที่จัดเตรียมพานผ้ามหาบังสุกุลและกรวดน้ำทองเหลืองส่งมอบเจ้าภาพ",
-    status: "wait",
-  },
-  {
-    n: 7, time: "20:15 น.", range: "20:15 – 20:30 น.",
-    title: "สรุปยอดซองร่วมทำบุญเข้าสมุดดิจิทัลและส่งมอบเจ้าภาพ",
-    desc: "ตรวจนับและปิดบัญชีหน้างานร่วมกับตัวแทนครอบครัว พร้อมบันทึกภาพลายเซ็น",
-    status: "wait",
-  },
-];
-
-const INITIAL_VENDORS: Vendor[] = [
-  {
-    id: "v1",
-    category: "พัสดุหมวดตกแต่งพิธี",
-    title: "ชุดดอกไม้ประดับหน้าหีบศพ (โทนขาว-เขียวสุภาพ)",
-    partner: "มาลัยพิสุทธิ์ ฟลอริสต์ (Florist Partner)",
-    timeLabel: "เวลาส่งมอบ:",
-    timeValue: "17:10 น. (ตรงเวลา) · ผู้ตรวจรับ: คุณศิริพร ส.",
-    detail: "รายละเอียด: ดอกลิลลี่ขาว กล้วยไม้ เบญจมาศ พร้อมพวงมาลัยประธาน 1 พวง ติดตั้งเรียบร้อยตามแบบ",
-    status: "received",
-    footLeft: { icon: "camera", text: "แนบภาพถ่ายยืนยัน 3 ภาพ" },
-    ref: "REC-2025-0891",
-  },
-  {
-    id: "v2",
-    category: "พัสดุโครงสร้าง & อุปกรณ์",
-    title: "ตู้หีบเย็นรักษาสภาพ (ระบบดิจิทัลปรับอุณหภูมิ)",
-    partner: "สยามหีบทองพรีเมียม (Coffin & Logistics)",
-    timeLabel: "เวลาส่งมอบ:",
-    timeValue: "15:40 น. · ตรวจสอบระบบไฟฟ้า: 100% ปกติ",
-    detail: "อุณหภูมิตั้งค่าคงที่ 4.2°C ระบบสำรองไฟ UPS พร้อมใช้งานตลอด 24 ชั่วโมง",
-    status: "received",
-    footLeft: { icon: "bolt", text: "การทดสอบวงจรไฟฟ้า: สมบูรณ์" },
-    ref: "REC-2025-0870",
-  },
-  {
-    id: "v3",
-    category: "พัสดุรับรองอาหารว่าง · เร่งด่วน",
-    title: "ชุดอาหารว่างและเครื่องดื่มรับรองแขก VIP (150 กล่อง)",
-    partner: "กานต์ตัวลัย เคเทอริ่ง (Catering Partner)",
-    timeLabel: "สถานะส่งมอบ:",
-    timeValue: "18:05 น. (รถขนส่งจอดเทียบข้างศาลา 2)",
-    timeGold: true,
-    detail: "รายการจัดส่ง: พายเห็ดทรัฟเฟิล + ขนมเปี๊ยะทองคำ + น้ำเก๊กฮวยอุ่น (บรรจุกล่องกระดาษคราฟต์สุภาพ)",
-    status: "arrived",
-    urgent: true,
-  },
-  {
-    id: "v4",
-    category: "ของที่ระลึก & หนังสือ",
-    title: "ชุดของชำร่วยและหนังสือที่ระลึกงานสวด (120 ชุด)",
-    partner: "โรงพิมพ์สุวรรณภูมิการพิมพ์",
-    timeLabel: "เวลานัดหมาย:",
-    timeValue: "18:30 น. (อยู่ระหว่างการเดินทาง ห่าง 3 กม.)",
-    detail: "หนังสืออบทสวดมนต์ปกแข็งสีงาช้าง พร้อมถุงผ้าสปันบอนด์สีกากีสุภาพ",
-    status: "shipping",
-    footLeft: { icon: "truck", text: "คนขับ: คุณสมพร (084-219-9xxx)" },
-    ref: "PO-2025-1104",
-  },
-];
-
-const NAV = [
+type NavKey = "live" | "vendors" | "ledger" | "schedule" | "summary";
+const NAV: { key: NavKey; th: string; en: string }[] = [
   { key: "live", th: "หน้างานวันนี้", en: "Live Ops - Active" },
   { key: "vendors", th: "ตรวจสอบคู่ค้า & พัสดุ", en: "Vendors" },
   { key: "ledger", th: "บันทึกซองทำบุญ", en: "Ledger" },
@@ -141,119 +23,141 @@ const NAV = [
 
 /* ---------- icons ---------- */
 const Svg: React.FC<{ size?: number; children: React.ReactNode }> = ({ size = 16, children }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-    style={{ display: "block", flexShrink: 0 }}>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>
     {children}
   </svg>
 );
 const IconCheck = ({ size = 14 }: { size?: number }) => <Svg size={size}><path d="M20 6 9 17l-5-5" /></Svg>;
 const IconHistory = () => <Svg size={14}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Svg>;
-const IconShieldCheck = () => <Svg size={18}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></Svg>;
+const IconShield = ({ size = 18 }: { size?: number }) => (
+  <Svg size={size}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></Svg>
+);
 const IconArrow = () => <Svg size={18}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></Svg>;
-const IconCamera = () => <Svg size={14}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" /><circle cx="12" cy="13" r="3" /></Svg>;
-const IconBolt = () => <Svg size={14}><path d="M13 2 3 14h9l-1 8 10-12h-9z" /></Svg>;
-const IconTruck = () => <Svg size={14}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></Svg>;
 const IconChecklist = () => <Svg size={18}><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" /><path d="M13 6h8" /><path d="M13 12h8" /><path d="M13 18h8" /></Svg>;
 const IconUser = () => <Svg size={18}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" /></Svg>;
-const IconShieldUser = () => <Svg size={22}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><circle cx="12" cy="10" r="2" /><path d="M8.5 16c.5-1.7 1.8-2.5 3.5-2.5s3 .8 3.5 2.5" /></Svg>;
 
-const footIcon = (i: "camera" | "bolt" | "truck") =>
-  i === "camera" ? <IconCamera /> : i === "bolt" ? <IconBolt /> : <IconTruck />;
+const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="org-modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="org-modal" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="org-modal-head">
+          <h3>{title}</h3>
+          <button type="button" onClick={onClose} aria-label="ปิด">✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <label className="org-field"><span>{label}</span>{children}</label>
+);
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())} น.`;
+const nextOf = (steps: OpsStep[]) => {
+  const ai = steps.findIndex((s) => s.status === "active");
+  return ai >= 0 ? steps.slice(ai + 1).find((s) => s.status === "wait") : undefined;
+};
+const tonightLabel = (j: OpsJob) =>
+  j.tonight === "cremation" ? "วันฌาปนกิจ" : typeof j.tonight === "number" ? `คืนที่ ${j.tonight} จาก ${j.nights}` : "ยังไม่ถึง/พ้นวันพิธี";
 
-export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
-  currentUser,
-  onNavigateHome,
-  onLogout,
-}) => {
-  const [nav, setNav] = useState("live");
-  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
-  const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
+export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({ currentUser, onNavigateHome, onLogout }) => {
+  const [nav, setNav] = useState<NavKey>("live");
+  const [jobs, setJobs] = useState<OpsJob[] | null>(null);
+  const [jobId, setJobId] = useState("");
+  const [date, setDate] = useState("");
+  const [board, setBoard] = useState<OpsBoard | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [toast, setToast] = useState<{ text: string; err: boolean } | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
 
+  const flash = useCallback((text: string, err = false) => {
+    setToast({ text, err });
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+  }, []);
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const organizerName = currentUser?.name ?? "คุณศิริพร สุวรรณโชติ";
-  const active = steps.find((s) => s.status === "active");
-  const doneCount = steps.filter((s) => s.status === "done").length;
-  const progress = Math.floor(((doneCount + (active ? 0.5 : 0)) / steps.length) * 100);
-  const receivedCount = vendors.filter((v) => v.status === "received").length;
-  const quality = Math.round((receivedCount / vendors.length) * 100);
-  const pending = vendors.filter((v) => v.status === "arrived").length;
-  const activeNav = NAV.find((n) => n.key === nav)!;
+  const organizerName = currentUser?.name ?? "ผู้ประสานงาน";
 
-  const nextQueue = () => {
-    const stamp = hhmm(new Date());
-    setSteps((prev) => {
-      const idx = prev.findIndex((s) => s.status === "active");
-      if (idx === -1) return prev;
-      return prev.map((s, i) => {
-        if (i === idx) return { ...s, status: "done" as StepStatus, doneNote: `บันทึกยืนยันเมื่อ ${stamp} โดย ${organizerName}` };
-        if (i === idx + 1) return { ...s, status: "active" as StepStatus };
-        if (i === idx + 2) return { ...s, status: "next" as StepStatus };
-        return s;
-      });
-    });
+  const loadJobs = useCallback(async () => {
+    try {
+      const list = await opsFetch<OpsJob[]>("/ops/jobs");
+      setJobs(list);
+      setJobId((cur) => (list.some((j) => j.id === cur) ? cur : list[0]?.id || ""));
+      setError("");
+    } catch (err) {
+      setError(errMsg(err, "โหลดรายการงานไม่สำเร็จ"));
+      setJobs([]);
+    }
+  }, []);
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  const loadBoard = useCallback(async () => {
+    if (!jobId) return setBoard(null);
+    try {
+      const b = await opsFetch<OpsBoard>(`/ops/bookings/${jobId}/board${date ? `?date=${date}` : ""}`);
+      setBoard(b);
+      setError("");
+    } catch (err) {
+      setError(errMsg(err, "โหลดกระดานงานไม่สำเร็จ"));
+    }
+  }, [jobId, date]);
+  useEffect(() => {
+    loadBoard();
+  }, [loadBoard]);
+
+  const act = async (fn: () => Promise<unknown>, okMsg?: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+      if (okMsg) flash(okMsg);
+      await loadBoard();
+    } catch (err) {
+      flash(errMsg(err), true);
+      await loadBoard();
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const markReceived = (id: string) =>
-    setVendors((prev) => prev.map((v) => (v.id === id ? { ...v, status: "received", urgent: false } : v)));
+  const job = board?.job || jobs?.find((j) => j.id === jobId) || null;
+  const activeNav = NAV.find((n) => n.key === nav)!;
 
-  const stats = useMemo(
-    () => [
-      {
-        no: "01", label: "สถานะงาน", value: "สวดพระอภิธรรม คืนที่ ๓",
-        sub: "กำลังต้อนรับแขก & จัดเตรียมไทยธรรม",
-        foot: ["มาตรฐานพิธีการ: สงบ เรียบร้อย", "ระดับสูงสุด", true] as const,
-      },
-      {
-        no: "02", label: "กำหนดเวลาหลัก", value: "18:00 – 20:30 น.",
-        sub: "คิวนิมนต์พระสงฆ์ในอีก ๒๗ นาที",
-        foot: ["ความคืบหน้ารวม", `${progress}%`, false] as const,
-      },
-      {
-        no: "03", label: "ตรวจรับคู่ค้า", value: `${receivedCount} / ${vendors.length} รายการครบถ้วน`,
-        sub: pending > 0 ? `รอส่งมอบอาหารว่าง ${pending} รายการ (กำลังลงของ)` : "ตรวจรับครบทุกรายการแล้ว",
-        foot: ["ตรวจคุณภาพแล้ว", `${quality}%`, true] as const,
-      },
-      {
-        no: "04", label: "แขกผู้มีเกียรติ", value: "ประมาณการ 120–150 ท่าน",
-        sub: "เก้าอี้และเครื่องปรับอากาศรองรับ 100%",
-        foot: ["ที่นั่ง VIP เจ้าภาพ", "สำรองพร้อม", false] as const,
-      },
-    ],
-    [progress, receivedCount, vendors.length, pending, quality],
-  );
+  const selectJob = (id: string) => {
+    setJobId(id);
+    setDate("");
+    setBoard(null);
+  };
 
   return (
     <div className="org">
-      {/* ===== Top bar ===== */}
       <header className="org-top">
-        <div className="org-brand">
-          <b>FOMS</b>
-          <span>ORGANIZER &amp; ON-SITE OPERATIONS</span>
-        </div>
+        <div className="org-brand"><b>FOMS</b><span>ORGANIZER &amp; ON-SITE OPERATIONS</span></div>
         <nav className="org-nav">
           {NAV.map((n) => (
-            <button key={n.key} className={nav === n.key ? "active" : ""} onClick={() => setNav(n.key)}>
-              {n.th} ({n.en})
-            </button>
+            <button key={n.key} className={nav === n.key ? "active" : ""} onClick={() => setNav(n.key)}>{n.th} ({n.en})</button>
           ))}
         </nav>
         <div className="org-top-right">
           <div className="org-team">
-            <b>ทีมพิธีการชุดที่ 1 · ปฏิบัติการสด</b>
+            <b>ทีมพิธีการ · ปฏิบัติการสด</b>
             <span>ผู้ประสานงาน: {organizerName}</span>
           </div>
-          <button className="org-user" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ">
-            <IconUser />
-          </button>
+          <button className="org-user" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ"><IconUser /></button>
         </div>
       </header>
 
@@ -266,189 +170,564 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
           <strong>{nav === "live" ? "กระดานบริหารพิธีการหน้างาน" : activeNav.th}</strong>
         </div>
 
-        {nav !== "live" ? (
-          <div className="org-placeholder">ส่วน “{activeNav.th}” ยังไม่ได้ทำ</div>
+        {jobs === null ? (
+          <div className="org-placeholder">กำลังโหลดรายการงาน...</div>
+        ) : jobs.length === 0 ? (
+          <div className="org-placeholder">{error || "ยังไม่มีงานที่ได้รับอนุมัติให้ดำเนินพิธี (งานต้องผ่านการอนุมัติจากเจ้าหน้าที่วัดก่อน)"}</div>
         ) : (
           <>
-            <div className="org-eyebrow"><i />CEREMONIAL TERMINAL · ศาลา ๒ (เมตตาธรรม)</div>
-            <section className="org-hero">
-              <div>
-                <h1>กระดานบริหารงานพิธีการหน้างาน <small>(Organizer Operations Board)</small></h1>
-                <p>ระบบควบคุมลำดับพิธีการแบบเรียลไทม์ ตรวจรับของส่งมอบจากคู่ค้า และบันทึกขั้นตอนประจำวัน ณ ศาลา ๒ วัดศรีสุคต พระอารามหลวง</p>
-              </div>
-              <div className="org-live">
-                <b><i />ระบบเชื่อมต่อสด</b>
-                <span>{pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())} น. · ซิงค์ข้อมูลล่าสุด</span>
-              </div>
-            </section>
-
-            {/* ===== Stats ===== */}
-            <section className="org-stats">
-              {stats.map((s) => (
-                <div className="org-stat" key={s.no}>
-                  <div className="org-stat-top"><span className="no">{s.no}</span><span>{s.label}</span></div>
-                  <h3>{s.value}</h3>
-                  <p>{s.sub}</p>
-                  <div className="org-stat-foot">
-                    <span>{s.foot[0]}</span>
-                    <b className={s.foot[2] ? "gold" : ""}>{s.foot[1]}</b>
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            <div className="org-cols">
-              {/* ===== Run queue ===== */}
-              <section className="org-queue">
-                <div className="org-sec-head">
-                  <div>
-                    <small>คิวพิธีการประจำคืนนี้</small>
-                    <h2>Live Ceremonial Run-Queue</h2>
-                  </div>
-                  <span className="org-chip warn"><i />กำลังดำเนินงาน (In Progress)</span>
-                </div>
-
-                {active ? (
-                  <div className="org-active">
-                    <div className="org-active-top">
-                      <span><em>คิวปัจจุบัน · ACTIVE STEP {pad(active.n)}</em> {active.range}</span>
-                      <span className="coord">ผู้ประสานงานหลัก: คุณศิริพร</span>
-                    </div>
-                    <h3>ต้อนรับแขกเกียรติยศและเสิร์ฟน้ำดื่มสมุนไพร / อาหารว่าง</h3>
-                    <p>เปิดรับรองแขกหน้าศาลา ให้ทีมบริการประจำจุดประตูทางเข้า จัดเตรียมสมุดลงนามดิจิทัล และประสานงานส่งมอบของว่าง VIP เมื่อแขกนั่งประจำที่</p>
-                    <div className="org-active-foot">
-                      <span><IconShieldCheck /> ตรวจสอบความพร้อมของเจ้าหน้าที่: ครบ 4 จุด</span>
-                      <button className="org-btn-black" onClick={nextQueue}>
-                        ข้ามไปยังคิวถัดไป (Next Queue) <IconArrow />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="org-active done-all">ดำเนินพิธีครบทุกขั้นตอนแล้ว</div>
-                )}
-
-                <ol className="org-timeline">
-                  {steps.map((s) => (
-                    <li key={s.n} className={`org-step ${s.status}`}>
-                      <span className="marker">
-                        {s.status === "done" ? <IconCheck /> : s.status === "active" ? <i /> : pad(s.n)}
-                      </span>
-                      <div className="card">
-                        <div className="row">
-                          <span className="meta">
-                            STEP {pad(s.n)} · {s.time}
-                            {s.status === "active" && <em>กำลังดำเนินการ</em>}
-                          </span>
-                          <span className={`tag ${s.status}`}>
-                            {s.status === "done" && "เสร็จสิ้นแล้ว"}
-                            {s.status === "active" && "ประจำหน้างาน"}
-                            {s.status === "next" && "รอเริ่ม (Queue Next)"}
-                            {s.status === "wait" && "รอเริ่ม"}
-                          </span>
-                        </div>
-                        <h4>{s.title}</h4>
-                        {s.status === "done" ? (
-                          <p className="note"><IconHistory /> {s.doneNote}</p>
-                        ) : (
-                          <p>{s.desc}</p>
-                        )}
-                      </div>
-                    </li>
+            <div className="org-pick">
+              <label>
+                งานที่รับผิดชอบ
+                <select value={jobId} onChange={(e) => selectJob(e.target.value)}>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.bookingRef} · {j.deceasedName} · {j.hallName} {j.tonight !== null ? "(พิธีวันนี้)" : ""}
+                    </option>
                   ))}
-                </ol>
-              </section>
-
-              {/* ===== Vendors ===== */}
-              <section className="org-vendors">
-                <div className="org-sec-head">
-                  <div>
-                    <small>การตรวจรับของหน้างาน</small>
-                    <h2>On-site Vendor Inspection</h2>
-                  </div>
-                  <span className="org-chip">{vendors.length} รายการพันธมิตร</span>
-                </div>
-
-                <div className="org-rule">
-                  <b>ระเบียบมาตรฐานการควบคุม FOMS</b>
-                  <p>คู่ค้าต้องส่งมอบและถ่ายภาพยืนยันก่อนเริ่มพิธี 60 นาที โดยตัวแทนออร์แกไนเซอร์ต้องตรวจนับจำนวนและความเรียบร้อยก่อนลงนาม</p>
-                </div>
-
-                {vendors.map((v) => (
-                  <article key={v.id} className={`org-vcard ${v.urgent ? "urgent" : ""}`}>
-                    <div className="row">
-                      <small>{v.category}</small>
-                      {v.status === "received" && <span className="org-badge black">ตรวจรับสมบูรณ์ <IconCheck size={12} /></span>}
-                      {v.status === "arrived" && <span className="org-badge yellow"><i />รถถึงลานจอดแล้ว</span>}
-                      {v.status === "shipping" && <span className="org-badge yellow">กำลังจัดส่ง</span>}
-                    </div>
-                    <h4>{v.title}</h4>
-                    <p><b>คู่ค้า:</b> {v.partner}</p>
-                    <p><b>{v.timeLabel}</b> <span className={v.timeGold ? "gold" : ""}>{v.timeValue}</span></p>
-                    <div className="detail">{v.detail}</div>
-
-                    {v.status === "arrived" ? (
-                      <>
-                        <button className="org-btn-outline" onClick={() => markReceived(v.id)}>
-                          <IconChecklist /> ตรวจรับและลงนาม (Mark as Received)
-                        </button>
-                        <div className="links">
-                          <button onClick={() => alert("เปิดกล้อง (ยังไม่เชื่อมระบบ)")}>แนบภาพถ่ายหน้างาน (Take Photo)</button>
-                          <span>รอการยืนยันจำนวน</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="foot">
-                        <span>{v.footLeft && footIcon(v.footLeft.icon)} {v.footLeft?.text}</span>
-                        <code>{v.ref}</code>
-                      </div>
-                    )}
-                  </article>
-                ))}
-              </section>
+                </select>
+              </label>
+              {board && (
+                <label>
+                  วันที่ปฏิบัติงาน
+                  <select value={board.date} onChange={(e) => setDate(e.target.value)}>
+                    {board.nights.map((d) => (
+                      <option key={d} value={d}>{thDate(d)} {d === board.job.cremationISO ? "(วันฌาปนกิจ)" : ""}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {job && <span className={`org-chip ${job.status === "IN_PROGRESS" ? "warn" : ""}`}>{STATUS_LABEL[job.status] || job.status}</span>}
+              <button className="org-ghost" onClick={() => { loadJobs(); loadBoard(); }}>โหลดใหม่</button>
             </div>
 
-            {/* ===== Rules + contacts ===== */}
-            <section className="org-rules">
-              <div className="left">
-                <IconShieldUser />
-                <div>
-                  <b>ระเบียบปฏิบัติงานผู้ประสานงาน FOMS ON-SITE ORGANIZER</b>
-                  <p>ทุกขั้นตอนพิธีและการตรวจรับสิ่งของต้องได้รับการกดยืนยันผ่าน Terminal นี้เพื่อบันทึกลงสู่ Audit Log แบบ Real-time ครอบครัวเจ้าภาพและเจ้าหน้าที่สำนักงานวัดสามารถตรวจสอบสถานะได้โปร่งใสตลอดเวลา</p>
-                </div>
-              </div>
-              <div className="right">
-                <small>ช่องทางติดต่อฉุกเฉินเฉพาะพื้นที่ ศาลา ๒</small>
-                <div className="contacts">
-                  <div><span>ฝ่ายอาคารสถานที่วัด:</span><b>02-998-0119 ต่อ 104</b></div>
-                  <div><span>มัคนายกประสิทธิ์:</span><b>081-445-9821</b></div>
-                </div>
-              </div>
-            </section>
+            {error && <div className="org-error">{error}</div>}
+            {!board ? (
+              <div className="org-placeholder">กำลังโหลดกระดานงาน...</div>
+            ) : (
+              <>
+                {nav === "live" && <LiveTab board={board} now={now} busy={busy} organizerName={organizerName} act={act} reload={loadBoard} flash={flash} />}
+                {nav === "vendors" && <VendorsTab board={board} busy={busy} act={act} />}
+                {nav === "ledger" && <LedgerTab board={board} busy={busy} act={act} />}
+                {nav === "schedule" && <ScheduleTab board={board} flash={flash} />}
+                {nav === "summary" && <SummaryTab board={board} flash={flash} onChanged={() => { loadJobs(); loadBoard(); }} />}
+              </>
+            )}
           </>
         )}
       </main>
+
+      {toast && <div className={`org-toast ${toast.err ? "err" : ""}`} role="status">{toast.text}</div>}
 
       <footer className="org-footer">
         <div className="cols">
           <div>
             <b className="t">หน่วยงานบริหารและควบคุมพิธีการส่วนกลาง</b>
-            <p>FOMS On-Site Terminal — บันทึกและควบคุมข้อมูลพิธีการเฉพาะพื้นที่จริงเพื่อความถูกต้องตามระเบียบพิธี</p>
+            <p>FOMS On-Site Terminal — บันทึกและควบคุมข้อมูลพิธีการเฉพาะพื้นที่จริงเพื่อความโปร่งใส</p>
           </div>
           <div>
             <b className="t gold">ระบบรักษาความปลอดภัยและการตรวจสอบ</b>
-            <p>บัญชีซองและธุรกรรมทั้งหมดได้รับการบันทึกหลักฐานการแก้ไข (Immutable Audit Trail) ตามมาตรฐานความโปร่งใส</p>
+            <p>ซองทำบุญที่บันทึกแล้วแก้จำนวนเงินไม่ได้ ยกเลิกได้เฉพาะแบบระบุเหตุผลและเก็บหลักฐานไว้</p>
           </div>
           <div>
             <b className="t">สายด่วนปฏิบัติการฉุกเฉินหน้างาน</b>
-            <p><b>ศูนย์สนับสนุนส่วนกลาง:</b> 02-998-0119 (ตลอด 24 ชม.)<br /><b>หัวหน้าทีมพิธีการภาคสนาม:</b> 089-114-8833</p>
+            <p><b>ศูนย์สนับสนุนส่วนกลาง:</b> 02-998-0119 (ตลอด 24 ชม.)</p>
           </div>
         </div>
         <div className="bottom">
           <span>© 2025 FOMS. Ceremonial Protocol &amp; Funeral Operations Management. All rights reserved.</span>
-          <b>CEREMONIAL TERMINAL NODE #01 · WAT THEPSIRIN</b>
+          <b>CEREMONIAL TERMINAL NODE #01</b>
         </div>
       </footer>
     </div>
+  );
+};
+
+type Act = (fn: () => Promise<unknown>, okMsg?: string) => Promise<void>;
+
+/* =========================================================== หน้างานวันนี้ */
+const LiveTab: React.FC<{
+  board: OpsBoard; now: Date; busy: boolean; organizerName: string; act: Act; reload: () => void; flash: (m: string, e?: boolean) => void;
+}> = ({ board, now, busy, act, flash }) => {
+  const { steps, vendors, job } = board;
+  const active = steps.find((s) => s.status === "active");
+  const next = nextOf(steps);
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const progress = steps.length ? Math.floor(((doneCount + (active ? 0.5 : 0)) / steps.length) * 100) : 0;
+  const received = vendors.filter((v) => v.status === "RECEIVED").length;
+  const quality = vendors.length ? Math.round((received / vendors.length) * 100) : 0;
+  const arrived = vendors.filter((v) => v.status === "ARRIVED").length;
+  const kindLabel = board.dateKind === "CREMATION" ? "พิธีฌาปนกิจ" : "สวดพระอภิธรรม";
+
+  const init = () =>
+    act(() => opsFetch(`/ops/bookings/${job.id}/steps/init`, { method: "POST", body: { date: board.date } }), "เริ่มงานของวันนี้แล้ว สร้างคิวพิธีเรียบร้อย");
+  const complete = (s: OpsStep) =>
+    act(async () => {
+      const r = await opsFetch<{ allDone: boolean }>(`/ops/steps/${s.id}/complete`, { method: "PATCH" });
+      if (r.allDone) flash("ดำเนินพิธีครบทุกขั้นตอนของวันนี้แล้ว");
+    });
+  const vendorStep = (v: OpsVendor, status: VendorStatus) =>
+    act(() => opsFetch(`/ops/vendors/${v.id}`, { method: "PATCH", body: { status } }), status === "RECEIVED" ? `ตรวจรับ "${v.title}" แล้ว` : undefined);
+
+  return (
+    <>
+      <div className="org-eyebrow"><i />CEREMONIAL TERMINAL · {job.hallName} · {job.templeName}</div>
+      <section className="org-hero">
+        <div>
+          <h1>กระดานบริหารงานพิธีการหน้างาน <small>(Organizer Operations Board)</small></h1>
+          <p>
+            งาน {job.bookingRef} · {job.deceasedName} · เจ้าภาพ {job.hostName} · ระบบควบคุมลำดับพิธีการ ติ๊กเสร็จทีละขั้น
+            ตรวจรับของจากคู่ค้า และบันทึกซองทำบุญ ทุกการกดถูกบันทึกพร้อมชื่อผู้ดำเนินการ
+          </p>
+        </div>
+        <div className="org-live">
+          <b><i />ระบบเชื่อมต่อสด</b>
+          <span>{pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())} น. · {thDate(board.date)}</span>
+        </div>
+      </section>
+
+      <section className="org-stats">
+        <div className="org-stat">
+          <div className="org-stat-top"><span className="no">01</span><span>สถานะงาน</span></div>
+          <h3>{kindLabel} {board.dateKind === "CHANT" ? `(${tonightLabel(job)})` : ""}</h3>
+          <p>{active ? active.title : steps.length ? "ดำเนินพิธีครบทุกขั้นตอนแล้ว" : "ยังไม่ได้เริ่มงานของวันนี้"}</p>
+          <div className="org-stat-foot"><span>สถานะ</span><b className="gold">{STATUS_LABEL[job.status] || job.status}</b></div>
+        </div>
+        <div className="org-stat">
+          <div className="org-stat-top"><span className="no">02</span><span>กำหนดเวลาหลัก</span></div>
+          <h3>{steps.length ? `${steps[0].time.replace(" น.", "")} – ${steps[steps.length - 1].range.split("– ")[1] || ""}` : "—"}</h3>
+          <p>{next ? `คิวถัดไป: ${next.time} ${next.title.slice(0, 40)}` : active ? "กำลังดำเนินขั้นสุดท้าย" : "—"}</p>
+          <div className="org-stat-foot"><span>ความคืบหน้ารวม</span><b>{progress}%</b></div>
+        </div>
+        <div className="org-stat">
+          <div className="org-stat-top"><span className="no">03</span><span>ตรวจรับคู่ค้า</span></div>
+          <h3>{received} / {vendors.length} รายการครบถ้วน</h3>
+          <p>{vendors.length === 0 ? "ยังไม่มีรายการตรวจรับ (เพิ่มได้ในแท็บคู่ค้า)" : arrived > 0 ? `มีของถึงลานจอดแล้ว ${arrived} รายการ รอตรวจรับ` : received === vendors.length ? "ตรวจรับครบทุกรายการ" : "รอส่งมอบ"}</p>
+          <div className="org-stat-foot"><span>ตรวจคุณภาพแล้ว</span><b className="gold">{quality}%</b></div>
+        </div>
+        <div className="org-stat">
+          <div className="org-stat-top"><span className="no">04</span><span>ซองทำบุญ</span></div>
+          <h3>{baht(board.ledger.total)}</h3>
+          <p>{board.ledger.count} ซอง · แขกประมาณ {job.guests} ท่าน</p>
+          <div className="org-stat-foot"><span>แพ็กเกจ</span><b>{job.packageName}</b></div>
+        </div>
+      </section>
+
+      <div className="org-cols">
+        <section className="org-queue">
+          <div className="org-sec-head">
+            <div>
+              <small>คิวพิธีการประจำวัน {thDate(board.date)}</small>
+              <h2>Live Ceremonial Run-Queue</h2>
+            </div>
+            <span className={`org-chip ${active ? "warn" : ""}`}>{active ? <><i />กำลังดำเนินงาน (In Progress)</> : steps.length ? "เสร็จสิ้นครบทุกขั้น" : "ยังไม่เริ่ม"}</span>
+          </div>
+
+          {steps.length === 0 ? (
+            <div className="org-active">
+              <h3>ยังไม่ได้เริ่มงานของวันที่ {thDate(board.date)}</h3>
+              <p>กด "เริ่มงานวันนี้" เพื่อสร้างคิวพิธี {board.dateKind === "CREMATION" ? "วันฌาปนกิจ (5 ขั้นตอน)" : "คืนสวดพระอภิธรรม (7 ขั้นตอน)"} จากเวลาเริ่มพิธีที่วัดตั้งไว้</p>
+              <div className="org-active-foot">
+                <span><IconShield /> {board.live ? "งานได้รับอนุมัติแล้ว พร้อมเริ่ม" : "งานนี้ปิดหรือยังไม่ได้รับอนุมัติ เริ่มงานไม่ได้"}</span>
+                <button className="org-btn-black" disabled={!board.live || busy} onClick={init}>เริ่มงานวันนี้ <IconArrow /></button>
+              </div>
+            </div>
+          ) : active ? (
+            <div className="org-active">
+              <div className="org-active-top">
+                <span><em>คิวปัจจุบัน · ACTIVE STEP {pad(active.n)}</em> {active.range}</span>
+                <span className="coord">ผู้ประสานงาน: {job.hostName ? "ทีมจัดงาน" : ""}</span>
+              </div>
+              <h3>{active.title}</h3>
+              <p>{active.desc}</p>
+              <div className="org-active-foot">
+                <span><IconShield /> ขั้นที่ {active.n} จาก {steps.length}</span>
+                <button className="org-btn-black" disabled={busy} onClick={() => complete(active)}>
+                  {next ? "ติ๊กเสร็จ ไปคิวถัดไป (Next Queue)" : "ติ๊กเสร็จ ปิดขั้นสุดท้าย"} <IconArrow />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="org-active done-all">ดำเนินพิธีครบทุกขั้นตอนของวันนี้แล้ว</div>
+          )}
+
+          <ol className="org-timeline">
+            {steps.map((s) => {
+              const st = s.status === "wait" && next && next.id === s.id ? "next" : s.status;
+              return (
+                <li key={s.id} className={`org-step ${st}`}>
+                  <span className="marker">{s.status === "done" ? <IconCheck /> : s.status === "active" ? <i /> : pad(s.n)}</span>
+                  <div className="card">
+                    <div className="row">
+                      <span className="meta">STEP {pad(s.n)} · {s.time}{s.status === "active" && <em>กำลังดำเนินการ</em>}</span>
+                      <span className={`tag ${st}`}>
+                        {s.status === "done" && "เสร็จสิ้นแล้ว"}
+                        {s.status === "active" && "ประจำหน้างาน"}
+                        {st === "next" && "รอเริ่ม (Queue Next)"}
+                        {st === "wait" && "รอเริ่ม"}
+                      </span>
+                    </div>
+                    <h4>{s.title}</h4>
+                    {s.status === "done" ? (
+                      <p className="note"><IconHistory /> บันทึกยืนยันเมื่อ {hhmm(s.doneAt)} โดย {s.doneByName}</p>
+                    ) : (
+                      <p>{s.desc}</p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <section className="org-vendors">
+          <div className="org-sec-head">
+            <div>
+              <small>การตรวจรับของหน้างาน</small>
+              <h2>On-site Vendor Inspection</h2>
+            </div>
+            <span className="org-chip">{vendors.length} รายการ</span>
+          </div>
+          {vendors.length === 0 && <div className="org-empty">ยังไม่มีรายการตรวจรับ ไปที่แท็บ "ตรวจสอบคู่ค้า & พัสดุ" เพื่อเพิ่มหรือสร้างจากตัวเลือกที่เจ้าภาพเลือก</div>}
+          {vendors.map((v) => (
+            <VendorCard key={v.id} v={v} busy={busy} onStep={vendorStep} />
+          ))}
+        </section>
+      </div>
+    </>
+  );
+};
+
+const VendorCard: React.FC<{ v: OpsVendor; busy: boolean; onStep: (v: OpsVendor, s: VendorStatus) => void }> = ({ v, busy, onStep }) => (
+  <article className={`org-vcard ${v.status === "ARRIVED" ? "urgent" : ""}`}>
+    <div className="row">
+      <small>{v.category}</small>
+      {v.status === "RECEIVED" && <span className="org-badge black">ตรวจรับสมบูรณ์ <IconCheck size={12} /></span>}
+      {v.status === "ARRIVED" && <span className="org-badge yellow"><i />ของถึงลานจอดแล้ว</span>}
+      {v.status === "SHIPPING" && <span className="org-badge yellow">กำลังจัดส่ง</span>}
+    </div>
+    <h4>{v.title}</h4>
+    {v.partner && <p><b>คู่ค้า:</b> {v.partner}</p>}
+    {v.expectedTime && <p><b>เวลานัดส่งมอบ:</b> {v.expectedTime} น.</p>}
+    {v.detail && <div className="detail">{v.detail}</div>}
+    {v.status === "RECEIVED" ? (
+      <div className="foot">
+        <span><IconCheck /> ตรวจรับโดย {v.receivedByName} เวลา {hhmm(v.receivedAt)}</span>
+        <code>{v.ref}</code>
+      </div>
+    ) : (
+      <div className="org-vact">
+        {v.status === "SHIPPING" && <button className="org-btn-outline" disabled={busy} onClick={() => onStep(v, "ARRIVED")}>แจ้งของถึงลานจอดแล้ว</button>}
+        <button className="org-btn-outline" disabled={busy} onClick={() => onStep(v, "RECEIVED")}><IconChecklist /> ตรวจรับและลงนาม (Mark as Received)</button>
+      </div>
+    )}
+  </article>
+);
+
+/* =========================================================== คู่ค้า */
+const VENDOR_EMPTY = { title: "", partner: "", category: "", expectedTime: "", detail: "" };
+const VendorsTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({ board, busy, act }) => {
+  const [form, setForm] = useState<typeof VENDOR_EMPTY | null>(null);
+  const { vendors, job } = board;
+  const vendorStep = (v: OpsVendor, status: VendorStatus) =>
+    act(() => opsFetch(`/ops/vendors/${v.id}`, { method: "PATCH", body: { status } }), status === "RECEIVED" ? `ตรวจรับ "${v.title}" แล้ว` : undefined);
+  const seed = () =>
+    act(async () => {
+      const r = await opsFetch<{ created: number }>(`/ops/bookings/${job.id}/vendors/seed`, { method: "POST" });
+      if (r.created === 0) throw new Error("ไม่มีรายการใหม่ให้สร้าง (สร้างครบแล้ว)");
+    }, "สร้างรายการตรวจรับจากตัวเลือกที่เจ้าภาพเลือกแล้ว");
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    await act(() => opsFetch(`/ops/bookings/${job.id}/vendors`, { method: "POST", body: { ...form, expectedTime: form.expectedTime || undefined } }), "เพิ่มรายการตรวจรับแล้ว");
+    setForm(null);
+  };
+  const groups: { label: string; list: OpsVendor[] }[] = [
+    { label: "รอตรวจรับ", list: vendors.filter((v) => v.status !== "RECEIVED") },
+    { label: "ตรวจรับแล้ว", list: vendors.filter((v) => v.status === "RECEIVED") },
+  ];
+  return (
+    <section className="org-sheet">
+      <div className="org-sec-head">
+        <div><small>การตรวจรับของจากคู่ค้า</small><h2>ตรวจสอบคู่ค้า &amp; พัสดุ ({vendors.filter((v) => v.status === "RECEIVED").length}/{vendors.length})</h2></div>
+        <div className="org-actions">
+          <button className="org-ghost" disabled={busy} onClick={seed}>สร้างจากตัวเลือกที่เจ้าภาพเลือก</button>
+          <button className="org-btn-black sm" onClick={() => setForm({ ...VENDOR_EMPTY })}>+ เพิ่มรายการ</button>
+        </div>
+      </div>
+      <div className="org-rule"><b>ระเบียบมาตรฐานการควบคุม FOMS</b><p>คู่ค้าต้องส่งมอบก่อนเริ่มพิธี ผู้ตรวจรับกดลงนามรับของ ระบบบันทึกชื่อและเวลาไว้เป็นหลักฐาน ย้อนสถานะไม่ได้</p></div>
+      {vendors.length === 0 && <div className="org-empty">ยังไม่มีรายการ กด "สร้างจากตัวเลือกที่เจ้าภาพเลือก" หรือ "+ เพิ่มรายการ"</div>}
+      {groups.map((g) => g.list.length > 0 && (
+        <div key={g.label}>
+          <h3 className="org-group">{g.label} ({g.list.length})</h3>
+          <div className="org-vgrid">{g.list.map((v) => <VendorCard key={v.id} v={v} busy={busy} onStep={vendorStep} />)}</div>
+        </div>
+      ))}
+      {form && (
+        <Modal title="เพิ่มรายการตรวจรับ" onClose={() => setForm(null)}>
+          <form className="org-form" onSubmit={save}>
+            <Field label="รายการที่ต้องตรวจรับ"><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
+            <div className="org-form-row">
+              <Field label="คู่ค้า / ผู้ส่งมอบ"><input value={form.partner} onChange={(e) => setForm({ ...form, partner: e.target.value })} /></Field>
+              <Field label="หมวด"><input placeholder="เช่น ดอกไม้, อาหารว่าง" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></Field>
+            </div>
+            <div className="org-form-row">
+              <Field label="เวลานัดส่งมอบ"><input type="time" value={form.expectedTime} onChange={(e) => setForm({ ...form, expectedTime: e.target.value })} /></Field>
+              <Field label="รายละเอียด"><input value={form.detail} onChange={(e) => setForm({ ...form, detail: e.target.value })} /></Field>
+            </div>
+            <div className="org-form-actions">
+              <button type="button" className="org-ghost" onClick={() => setForm(null)}>ยกเลิก</button>
+              <button type="submit" className="org-btn-black sm" disabled={busy}>บันทึก</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </section>
+  );
+};
+
+/* =========================================================== ซองทำบุญ */
+const LedgerTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({ board, busy, act }) => {
+  const [form, setForm] = useState({ donorName: "", amount: "", note: "" });
+  const { ledger, job } = board;
+  const open = board.live;
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await act(() => opsFetch(`/ops/bookings/${job.id}/ledger`, { method: "POST", body: { ...form, amount: Number(form.amount), date: board.date } }), "บันทึกซองทำบุญแล้ว");
+    setForm({ donorName: "", amount: "", note: "" });
+  };
+  const voidIt = (e: OpsEnvelope) => {
+    const reason = window.prompt(`เหตุผลที่ยกเลิกซอง ${baht(e.amount)} ของ ${e.donorName} (จำเป็นต้องระบุ)`);
+    if (!reason || !reason.trim()) return;
+    act(() => opsFetch(`/ops/ledger/${e.id}/void`, { method: "PATCH", body: { reason } }), "ยกเลิกซองแล้ว (เก็บหลักฐานไว้ในบัญชี)");
+  };
+  const byDate = useMemo(() => {
+    const m = new Map<string, number>();
+    ledger.items.filter((e) => !e.voided).forEach((e) => m.set(e.date, (m.get(e.date) || 0) + e.amount));
+    return [...m.entries()].sort();
+  }, [ledger.items]);
+  return (
+    <section className="org-sheet">
+      <div className="org-sec-head">
+        <div><small>บัญชีซองร่วมทำบุญ</small><h2>บันทึกซองทำบุญ (Merit Ledger)</h2></div>
+        <div className="org-total"><small>ยอดรวมทั้งงาน ({ledger.count} ซอง)</small><b>{baht(ledger.total)}</b></div>
+      </div>
+      <div className="org-rule"><b>หลักฐานทางบัญชี</b><p>ซองที่บันทึกแล้วแก้จำนวนเงินไม่ได้ ถ้าบันทึกผิดให้ "ยกเลิก" พร้อมเหตุผล แล้วบันทึกใหม่ รายการที่ยกเลิกยังคงอยู่ในบัญชีเพื่อการตรวจสอบ</p></div>
+      {byDate.length > 0 && <div className="org-daychips">{byDate.map(([d, t]) => <span key={d} className="org-chip">{thDate(d)}: {baht(t)}</span>)}</div>}
+      <form className="org-inline" onSubmit={add}>
+        <Field label="ชื่อผู้ร่วมทำบุญ"><input placeholder="เว้นว่าง = ไม่ประสงค์ออกนาม" value={form.donorName} onChange={(e) => setForm({ ...form, donorName: e.target.value })} disabled={!open} /></Field>
+        <Field label="จำนวนเงิน (บาท)"><input required type="number" min={1} step="any" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} disabled={!open} /></Field>
+        <Field label="หมายเหตุ"><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} disabled={!open} /></Field>
+        <button type="submit" className="org-btn-black sm" disabled={!open || busy}>+ บันทึกซอง ({thDate(board.date)})</button>
+      </form>
+      {!open && <div className="org-error">งานนี้ปิดแล้ว บันทึกซองเพิ่มไม่ได้</div>}
+      <table className="org-table">
+        <thead><tr><th>วันที่</th><th>ผู้ร่วมทำบุญ</th><th className="r">จำนวนเงิน</th><th>หมายเหตุ</th><th>ผู้บันทึก</th><th /></tr></thead>
+        <tbody>
+          {ledger.items.map((e) => (
+            <tr key={e.id} className={e.voided ? "void" : ""}>
+              <td>{thDate(e.date)}<div className="muted">{hhmm(e.createdAt)}</div></td>
+              <td>{e.donorName}</td>
+              <td className="r"><b>{baht(e.amount)}</b></td>
+              <td>{e.voided ? <span className="org-voidtag">ยกเลิกโดย {e.voidedByName}: {e.voidReason}</span> : e.note || "—"}</td>
+              <td>{e.recordedByName}</td>
+              <td className="r">{!e.voided && open && <button className="org-link" disabled={busy} onClick={() => voidIt(e)}>ยกเลิกซอง</button>}</td>
+            </tr>
+          ))}
+          {ledger.items.length === 0 && <tr><td colSpan={6} className="empty">ยังไม่มีซองทำบุญที่บันทึก</td></tr>}
+        </tbody>
+      </table>
+    </section>
+  );
+};
+
+/* =========================================================== กำหนดการ */
+const ScheduleTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) => void }> = ({ board, flash }) => {
+  const { job } = board;
+  const [sched, setSched] = useState<ScheduleList | null>(null);
+  const [assign, setAssign] = useState<{ assignments: OpsAssignment[]; persons: OpsPerson[] } | null>(null);
+  const [pick, setPick] = useState({ date: board.date, personId: "", role: "CHANT" });
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [s, a] = await Promise.all([
+        opsFetch<ScheduleList>(`/bookings/${job.id}/schedule`),
+        opsFetch<{ assignments: OpsAssignment[]; persons: OpsPerson[] }>(`/ops/bookings/${job.id}/assignments`),
+      ]);
+      setSched(s);
+      setAssign(a);
+    } catch (err) {
+      flash(errMsg(err), true);
+    }
+  }, [job.id, flash]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const run = async (fn: () => Promise<unknown>, ok: string) => {
+    setBusy(true);
+    try {
+      await fn();
+      flash(ok);
+      await load();
+    } catch (err) {
+      flash(errMsg(err), true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const generate = () => {
+    if (sched && sched.items.length > 0 && !window.confirm("มีกำหนดการอยู่แล้ว การสร้างใหม่จะแทนที่รายการเดิมทั้งหมด ดำเนินการต่อหรือไม่?")) return;
+    run(async () => {
+      const r = await opsFetch<{ count: number; warnings: { message: string }[] }>(`/bookings/${job.id}/schedule/generate`, { method: "POST" });
+      if (r.warnings.length) flash(r.warnings[0].message, true);
+    }, "สร้างกำหนดการพิธีอัตโนมัติแล้ว");
+  };
+  const doAssign = (e: React.FormEvent) => {
+    e.preventDefault();
+    run(() => opsFetch(`/ops/bookings/${job.id}/assignments`, { method: "POST", body: pick }), "จัดบุคลากรเข้ากำหนดการแล้ว");
+  };
+
+  const dates = useMemo(() => [...new Set((sched?.items || []).map((i) => i.date))].sort(), [sched]);
+  const person = assign?.persons.find((p) => p.id === pick.personId);
+  const roleOptions = !person ? [] : person.type === "MONK" ? ["CHIEF", "CHANT"] : ["MC"];
+
+  return (
+    <section className="org-sheet">
+      <div className="org-sec-head">
+        <div><small>กำหนดการพิธีทั้งงาน</small><h2>กำหนดการพิธี (Schedule)</h2></div>
+        <button className="org-btn-black sm" disabled={busy || !board.live} onClick={generate}>{sched && sched.items.length ? "สร้างกำหนดการใหม่" : "สร้างกำหนดการอัตโนมัติ"}</button>
+      </div>
+      {!sched ? <div className="org-empty">กำลังโหลด...</div> : sched.items.length === 0 ? (
+        <div className="org-empty">ยังไม่มีกำหนดการ กด "สร้างกำหนดการอัตโนมัติ" ระบบจะสร้างพิธีสรงน้ำศพ สวดอภิธรรมรายคืน ฌาปนกิจ และทำบุญ 7/50/100 วัน ตามกฎของวัด</div>
+      ) : (
+        <div className="org-days">
+          {dates.map((d) => (
+            <div key={d} className="org-day">
+              <h3>{thDate(d)}</h3>
+              {sched.items.filter((i) => i.date === d).map((i) => (
+                <div key={i._id} className="org-item">
+                  <b>{i.time ? `${i.time} น.` : "ตลอดวัน"}</b>
+                  <span>{i.title}<em>{TYPE_LABEL[i.type] || i.type}</em></span>
+                </div>
+              ))}
+              {(assign?.assignments || []).filter((a) => a.date === d).map((a) => (
+                <div key={a.id} className="org-item person">
+                  <b>{ROLE_LABEL[a.role]}</b>
+                  <span>{a.name}
+                    <button className="org-link" disabled={busy} onClick={() => run(() => opsFetch(`/ops/assignments/${a.id}`, { method: "DELETE" }), "ยกเลิกการจัดบุคลากรแล้ว")}>เอาออก</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h3 className="org-group">จัดพระสงฆ์ / มัคนายกเข้าพิธี</h3>
+      {assign && assign.persons.length === 0 ? (
+        <div className="org-empty">วัดนี้ยังไม่มีรายชื่อพระ/มัคนายกในระบบ (ผู้ดูแลระบบเพิ่มได้ที่หน้า ข้อมูลกลาง &gt; รายชื่อพระและมัคนายก)</div>
+      ) : (
+        <form className="org-inline" onSubmit={doAssign}>
+          <Field label="วันที่">
+            <select value={pick.date} onChange={(e) => setPick({ ...pick, date: e.target.value })}>
+              {board.nights.map((d) => <option key={d} value={d}>{thDate(d)}</option>)}
+            </select>
+          </Field>
+          <Field label="บุคลากร">
+            <select required value={pick.personId} onChange={(e) => { const p = assign?.persons.find((x) => x.id === e.target.value); setPick({ ...pick, personId: e.target.value, role: p ? (p.type === "MONK" ? "CHANT" : "MC") : pick.role }); }}>
+              <option value="">— เลือก —</option>
+              {(assign?.persons || []).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.type === "MONK" ? "พระ" : p.type === "DEACON" ? "มัคนายก" : "พิธีกร"})</option>)}
+            </select>
+          </Field>
+          <Field label="หน้าที่">
+            <select value={pick.role} onChange={(e) => setPick({ ...pick, role: e.target.value })}>
+              {roleOptions.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+            </select>
+          </Field>
+          <button type="submit" className="org-btn-black sm" disabled={busy || !pick.personId || !board.live}>จัดเข้าพิธี</button>
+        </form>
+      )}
+    </section>
+  );
+};
+
+/* =========================================================== สรุปงาน */
+const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) => void; onChanged: () => void }> = ({ board, flash, onChanged }) => {
+  const [sum, setSum] = useState<OpsSummary | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { job } = board;
+
+  const load = useCallback(async () => {
+    try {
+      setSum(await opsFetch<OpsSummary>(`/ops/bookings/${job.id}/summary`));
+    } catch (err) {
+      flash(errMsg(err), true);
+    }
+  }, [job.id, flash]);
+  useEffect(() => {
+    load();
+  }, [load, board.steps, board.ledger.total, board.vendors]);
+
+  const setStatus = async (status: "IN_PROGRESS" | "COMPLETED") => {
+    setBusy(true);
+    try {
+      try {
+        await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status } });
+      } catch (err) {
+        if (err instanceof ApiError && err.code === "VENDORS_PENDING") {
+          if (!window.confirm(`${err.message}\nปิดงานทั้งที่ยังตรวจรับไม่ครบหรือไม่?`)) return;
+          await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status, force: true } });
+        } else throw err;
+      }
+      flash(status === "COMPLETED" ? "ปิดงานเรียบร้อย งานนี้ถูกบันทึกในประวัติของเจ้าหน้าที่วัดแล้ว" : "เริ่มดำเนินงานแล้ว");
+      onChanged();
+      await load();
+    } catch (err) {
+      flash(errMsg(err), true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!sum) return <div className="org-placeholder">กำลังโหลดสรุป...</div>;
+  const pct = sum.steps.total ? Math.round((sum.steps.done / sum.steps.total) * 100) : 0;
+  return (
+    <section className="org-sheet">
+      <div className="org-sec-head">
+        <div><small>รายงานสรุปงาน {sum.job.bookingRef}</small><h2>{sum.job.deceasedName}</h2></div>
+        <span className={`org-chip ${sum.job.status === "IN_PROGRESS" ? "warn" : ""}`}>{STATUS_LABEL[sum.job.status] || sum.job.status}</span>
+      </div>
+      <div className="org-sumgrid">
+        <div className="org-stat"><div className="org-stat-top"><span>ขั้นตอนพิธี</span></div><h3>{sum.steps.done} / {sum.steps.total}</h3><p>เสร็จ {pct}% ของที่เริ่มสร้างไว้</p></div>
+        <div className="org-stat"><div className="org-stat-top"><span>ตรวจรับคู่ค้า</span></div><h3>{sum.vendors.received} / {sum.vendors.total}</h3><p>{sum.vendors.total - sum.vendors.received === 0 ? "ครบทุกรายการ" : `ค้าง ${sum.vendors.total - sum.vendors.received} รายการ`}</p></div>
+        <div className="org-stat"><div className="org-stat-top"><span>ซองทำบุญ</span></div><h3>{baht(sum.ledger.total)}</h3><p>{sum.ledger.count} ซอง (ยกเลิก {sum.ledger.voidedCount})</p></div>
+        <div className="org-stat"><div className="org-stat-top"><span>บุคลากรที่จัดเข้าพิธี</span></div><h3>{sum.assignments}</h3><p>รายการจัดเวร</p></div>
+      </div>
+      <table className="org-table">
+        <thead><tr><th>วันที่</th><th>ประเภท</th><th>ขั้นตอนที่เสร็จ</th><th className="r">ซองทำบุญ</th></tr></thead>
+        <tbody>
+          {sum.nights.map((n) => (
+            <tr key={n.date}>
+              <td>{thDate(n.date)}</td>
+              <td>{n.kind === "CREMATION" ? "ฌาปนกิจ" : "สวดพระอภิธรรม"}</td>
+              <td>{n.stepsTotal ? `${n.stepsDone} / ${n.stepsTotal}` : <span className="muted">ยังไม่เริ่ม</span>}</td>
+              <td className="r">{baht(n.envelopeTotal)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="org-closebar">
+        <p>เจ้าภาพ {sum.job.hostName} · {sum.job.hallName} · {thDate(sum.job.startISO)} – {thDate(sum.job.cremationISO)} · แขกประมาณ {sum.job.guests} ท่าน</p>
+        <div className="org-actions">
+          {sum.canStart && <button className="org-ghost" disabled={busy} onClick={() => setStatus("IN_PROGRESS")}>เริ่มดำเนินงาน</button>}
+          <button className="org-btn-black" disabled={busy || !sum.canComplete} onClick={() => setStatus("COMPLETED")} title={sum.canComplete ? "" : "ต้องเริ่มดำเนินงาน (ติ๊กขั้นตอนแรก) ก่อน จึงปิดงานได้"}>
+            ปิดงาน (Complete Job) <IconArrow />
+          </button>
+        </div>
+      </div>
+    </section>
   );
 };
 
