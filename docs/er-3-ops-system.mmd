@@ -33,21 +33,6 @@ class VendorDelivery["ตรวจรับของคู่ค้า (VendorDe
   note : String
 }
 
-class MeritEnvelope["ซองทำบุญ (MeritEnvelope)"] {
-  _id : ObjectId
-  bookingId : ObjectId
-  date : String
-  donorName : String
-  amount : Number
-  note : String
-  recordedBy : ObjectId
-  recordedByName : String
-  voided : Boolean
-  voidReason : String
-  voidedByName : String
-  voidedAt : Date
-}
-
 class Inventory["คลังอุปกรณ์ (Inventory)"] {
   _id : ObjectId
   templeId : ObjectId
@@ -144,7 +129,6 @@ Temple "1" --> "0..*" Booking
 Booking "1" --> "0..*" RunStep
 Booking "1" --> "0..*" VendorDelivery
 Temple "1" --> "0..*" VendorDelivery
-Booking "1" --> "0..*" MeritEnvelope
 User "1" --> "0..*" AuditLog : ผู้ดำเนินการ
 User "1" --> "0..*" Notification
 Booking "1" --> "0..*" Notification
