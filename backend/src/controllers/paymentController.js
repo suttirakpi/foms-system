@@ -71,6 +71,9 @@ async function syncBookingPayment(bookingId) {
   else paymentStatus = "UNPAID";
 
   await Booking.findByIdAndUpdate(bookingId, { paymentStatus }, { runValidators: true });
+  // ชำระครบแล้ว: งานที่อนุมัติไว้ (CONFIRMED) ขยับเป็น PAID ให้ตรงกับขั้น "ชำระเงินแล้ว" ในหน้าเจ้าภาพ
+  if (paymentStatus === "PAID")
+    await Booking.updateOne({ _id: bookingId, status: "CONFIRMED" }, { status: "PAID" });
   return paymentStatus;
 }
 
@@ -224,7 +227,8 @@ exports.getSlip = async (req, res) => {
 
     const filePath = path.join(SLIP_DIR, payment.slip.path);
     await fs.access(filePath); // ไฟล์หายจากดิสก์ → 404 ไม่ใช่ 500
-    res.sendFile(filePath);
+    // ใช้ root แทน path เต็ม: sendFile ปฏิเสธ path เต็มที่มีโฟลเดอร์ขึ้นต้นด้วยจุด (เช่น D:\.vscode\...) ทำให้เครื่องที่วางโปรเจกต์ไว้ในโฟลเดอร์แบบนั้นได้ 404
+    res.sendFile(payment.slip.path, { root: SLIP_DIR });
   } catch (err) {
     if (err.code === "ENOENT")
       return res.status(404).json({ code: "SLIP_NOT_FOUND", message: "ไม่พบไฟล์สลิปบนระบบ" });

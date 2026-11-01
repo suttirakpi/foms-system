@@ -192,3 +192,84 @@ exports.calendar = async (req, res, next) => {
     next(err);
   }
 };
+
+// ---------------------------------------------------------------- สลิปโอนเงินรอตรวจ (เจ้าหน้าที่วัด)
+// GET /api/staff/payments/pending — งวดที่เจ้าภาพส่งสลิปมาแล้วรอตรวจ พร้อมข้อมูลงาน (กรองตามวัดของเจ้าหน้าที่)
+exports.pendingPayments = async (req, res, next) => {
+  try {
+    const Payment = require("../models/Payment");
+    const payments = await Payment.find({ status: "PENDING" }).sort({ updatedAt: 1 }).limit(200).lean();
+    const bookings = await Booking.find({
+      _id: { $in: payments.map((p) => p.bookingId) },
+      ...templeScope(req),
+    })
+      .select("bookingRef hostName deceasedName hallName pricing.grandTotal")
+      .lean();
+    const byId = new Map(bookings.map((b) => [String(b._id), b]));
+    res.json(
+      payments
+        .filter((p) => byId.has(String(p.bookingId)))
+        .map((p) => {
+          const b = byId.get(String(p.bookingId));
+          return {
+            id: String(p._id),
+            installmentNo: p.installmentNo,
+            label: p.label,
+            plan: p.plan,
+            amountDue: p.amountDue,
+            paidAmount: p.paidAmount,
+            paidAt: p.paidAt,
+            submittedAt: p.updatedAt,
+            fileName: p.slip && p.slip.originalName,
+            booking: { id: String(b._id), ref: b.bookingRef, hostName: b.hostName, deceasedName: b.deceasedName, hallName: b.hallName, grandTotal: b.pricing.grandTotal },
+          };
+        }),
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------- สถิติสำหรับการ์ดหน้าอนุมัติ
+// GET /api/staff/summary
+exports.summary = async (req, res, next) => {
+  try {
+    const Payment = require("../models/Payment");
+    const PersonAssignment = require("../models/PersonAssignment");
+    const scope = templeScope(req);
+    const today = todayInBangkok();
+    const tomorrow = addDays(today, 1);
+
+    const [pendingRows, temples, live] = await Promise.all([
+      Booking.find({ ...scope, status: "PENDING" }).select("startDate guests hallId").lean(),
+      Temple.find(scope.templeId ? { _id: scope.templeId } : {}).lean(),
+      Booking.find({ ...scope, status: { $in: ["CONFIRMED", "PAID", "IN_PROGRESS"] }, startDate: { $lte: new Date(today) }, endDate: { $gte: new Date(today) } })
+        .select("_id")
+        .lean(),
+    ]);
+    const halls = temples.flatMap((t) => t.halls.filter((h) => h.isActive !== false).map((h) => ({ id: h._id, name: h.name })));
+    const occupiedIds = new Set(
+      (await HallReservation.find({ date: today, hallId: { $in: halls.map((h) => h.id) } }).select("hallId").lean()).map((r) => String(r.hallId)),
+    );
+    const monks = live.length
+      ? await PersonAssignment.countDocuments({ bookingId: { $in: live.map((b) => b._id) }, date: today })
+      : 0;
+    const bookingIds = (await Booking.find(scope).select("_id").lean()).map((b) => b._id);
+    const pendingSlips = await Payment.countDocuments({ status: "PENDING", bookingId: { $in: bookingIds } });
+
+    res.json({
+      pending: pendingRows.length,
+      urgent: pendingRows.filter((b) => dateToStr(b.startDate) <= tomorrow).length,
+      pendingSlips,
+      halls: {
+        total: halls.length,
+        freeToday: halls.filter((h) => !occupiedIds.has(String(h.id))).length,
+        freeNames: halls.filter((h) => !occupiedIds.has(String(h.id))).map((h) => h.name.split(" (")[0]),
+      },
+      tonight: { jobs: live.length, persons: monks },
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
