@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AuthUser } from "../App";
 import {
-  ApiError, OpsAssignment, OpsBoard, OpsEnvelope, OpsJob, OpsPerson, OpsStep, OpsSummary, OpsVendor, ROLE_LABEL,
-  STATUS_LABEL, ScheduleList, TYPE_LABEL, VendorStatus, baht, errMsg, hhmm, opsFetch, pad, thDate,
+  ApiError, OpsAssignment, OpsBoard, OpsJob, OpsPerson, OpsStep, OpsSummary, OpsVendor, ROLE_LABEL,
+  STATUS_LABEL, ScheduleList, TYPE_LABEL, VendorStatus, errMsg, hhmm, opsFetch, pad, thDate,
 } from "../opsApi";
 import "./OrganizerBoard.css";
 
@@ -12,11 +12,10 @@ interface OrganizerBoardProps {
   onLogout: () => void;
 }
 
-type NavKey = "live" | "vendors" | "ledger" | "schedule" | "summary";
+type NavKey = "live" | "vendors" | "schedule" | "summary";
 const NAV: { key: NavKey; th: string; en: string }[] = [
   { key: "live", th: "หน้างานวันนี้", en: "Live Ops - Active" },
   { key: "vendors", th: "ตรวจสอบคู่ค้า & พัสดุ", en: "Vendors" },
-  { key: "ledger", th: "บันทึกซองทำบุญ", en: "Ledger" },
   { key: "schedule", th: "กำหนดการพิธี", en: "Schedule" },
   { key: "summary", th: "รายงานสรุปงาน", en: "Summary" },
 ];
@@ -208,7 +207,6 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({ currentUser, onN
               <>
                 {nav === "live" && <LiveTab board={board} now={now} busy={busy} organizerName={organizerName} act={act} reload={loadBoard} flash={flash} />}
                 {nav === "vendors" && <VendorsTab board={board} busy={busy} act={act} />}
-                {nav === "ledger" && <LedgerTab board={board} busy={busy} act={act} />}
                 {nav === "schedule" && <ScheduleTab board={board} flash={flash} />}
                 {nav === "summary" && <SummaryTab board={board} flash={flash} onChanged={() => { loadJobs(); loadBoard(); }} />}
               </>
@@ -227,7 +225,7 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({ currentUser, onN
           </div>
           <div>
             <b className="t gold">ระบบรักษาความปลอดภัยและการตรวจสอบ</b>
-            <p>ซองทำบุญที่บันทึกแล้วแก้จำนวนเงินไม่ได้ ยกเลิกได้เฉพาะแบบระบุเหตุผลและเก็บหลักฐานไว้</p>
+            <p>ทุกการติ๊กขั้นตอนและการตรวจรับของถูกบันทึกพร้อมชื่อผู้ดำเนินการและเวลา ย้อนสถานะไม่ได้</p>
           </div>
           <div>
             <b className="t">สายด่วนปฏิบัติการฉุกเฉินหน้างาน</b>
@@ -277,7 +275,7 @@ const LiveTab: React.FC<{
           <h1>กระดานบริหารงานพิธีการหน้างาน <small>(Organizer Operations Board)</small></h1>
           <p>
             งาน {job.bookingRef} · {job.deceasedName} · เจ้าภาพ {job.hostName} · ระบบควบคุมลำดับพิธีการ ติ๊กเสร็จทีละขั้น
-            ตรวจรับของจากคู่ค้า และบันทึกซองทำบุญ ทุกการกดถูกบันทึกพร้อมชื่อผู้ดำเนินการ
+            และตรวจรับของจากคู่ค้า ทุกการกดถูกบันทึกพร้อมชื่อผู้ดำเนินการ
           </p>
         </div>
         <div className="org-live">
@@ -306,9 +304,9 @@ const LiveTab: React.FC<{
           <div className="org-stat-foot"><span>ตรวจคุณภาพแล้ว</span><b className="gold">{quality}%</b></div>
         </div>
         <div className="org-stat">
-          <div className="org-stat-top"><span className="no">04</span><span>ซองทำบุญ</span></div>
-          <h3>{baht(board.ledger.total)}</h3>
-          <p>{board.ledger.count} ซอง · แขกประมาณ {job.guests} ท่าน</p>
+          <div className="org-stat-top"><span className="no">04</span><span>แขกผู้ร่วมงาน</span></div>
+          <h3>ประมาณ {job.guests} ท่าน</h3>
+          <p>{job.hallName}</p>
           <div className="org-stat-foot"><span>แพ็กเกจ</span><b>{job.packageName}</b></div>
         </div>
       </section>
@@ -486,61 +484,6 @@ const VendorsTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({ bo
   );
 };
 
-/* =========================================================== ซองทำบุญ */
-const LedgerTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({ board, busy, act }) => {
-  const [form, setForm] = useState({ donorName: "", amount: "", note: "" });
-  const { ledger, job } = board;
-  const open = board.live;
-  const add = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await act(() => opsFetch(`/ops/bookings/${job.id}/ledger`, { method: "POST", body: { ...form, amount: Number(form.amount), date: board.date } }), "บันทึกซองทำบุญแล้ว");
-    setForm({ donorName: "", amount: "", note: "" });
-  };
-  const voidIt = (e: OpsEnvelope) => {
-    const reason = window.prompt(`เหตุผลที่ยกเลิกซอง ${baht(e.amount)} ของ ${e.donorName} (จำเป็นต้องระบุ)`);
-    if (!reason || !reason.trim()) return;
-    act(() => opsFetch(`/ops/ledger/${e.id}/void`, { method: "PATCH", body: { reason } }), "ยกเลิกซองแล้ว (เก็บหลักฐานไว้ในบัญชี)");
-  };
-  const byDate = useMemo(() => {
-    const m = new Map<string, number>();
-    ledger.items.filter((e) => !e.voided).forEach((e) => m.set(e.date, (m.get(e.date) || 0) + e.amount));
-    return [...m.entries()].sort();
-  }, [ledger.items]);
-  return (
-    <section className="org-sheet">
-      <div className="org-sec-head">
-        <div><small>บัญชีซองร่วมทำบุญ</small><h2>บันทึกซองทำบุญ (Merit Ledger)</h2></div>
-        <div className="org-total"><small>ยอดรวมทั้งงาน ({ledger.count} ซอง)</small><b>{baht(ledger.total)}</b></div>
-      </div>
-      <div className="org-rule"><b>หลักฐานทางบัญชี</b><p>ซองที่บันทึกแล้วแก้จำนวนเงินไม่ได้ ถ้าบันทึกผิดให้ "ยกเลิก" พร้อมเหตุผล แล้วบันทึกใหม่ รายการที่ยกเลิกยังคงอยู่ในบัญชีเพื่อการตรวจสอบ</p></div>
-      {byDate.length > 0 && <div className="org-daychips">{byDate.map(([d, t]) => <span key={d} className="org-chip">{thDate(d)}: {baht(t)}</span>)}</div>}
-      <form className="org-inline" onSubmit={add}>
-        <Field label="ชื่อผู้ร่วมทำบุญ"><input placeholder="เว้นว่าง = ไม่ประสงค์ออกนาม" value={form.donorName} onChange={(e) => setForm({ ...form, donorName: e.target.value })} disabled={!open} /></Field>
-        <Field label="จำนวนเงิน (บาท)"><input required type="number" min={1} step="any" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} disabled={!open} /></Field>
-        <Field label="หมายเหตุ"><input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} disabled={!open} /></Field>
-        <button type="submit" className="org-btn-black sm" disabled={!open || busy}>+ บันทึกซอง ({thDate(board.date)})</button>
-      </form>
-      {!open && <div className="org-error">งานนี้ปิดแล้ว บันทึกซองเพิ่มไม่ได้</div>}
-      <table className="org-table">
-        <thead><tr><th>วันที่</th><th>ผู้ร่วมทำบุญ</th><th className="r">จำนวนเงิน</th><th>หมายเหตุ</th><th>ผู้บันทึก</th><th /></tr></thead>
-        <tbody>
-          {ledger.items.map((e) => (
-            <tr key={e.id} className={e.voided ? "void" : ""}>
-              <td>{thDate(e.date)}<div className="muted">{hhmm(e.createdAt)}</div></td>
-              <td>{e.donorName}</td>
-              <td className="r"><b>{baht(e.amount)}</b></td>
-              <td>{e.voided ? <span className="org-voidtag">ยกเลิกโดย {e.voidedByName}: {e.voidReason}</span> : e.note || "—"}</td>
-              <td>{e.recordedByName}</td>
-              <td className="r">{!e.voided && open && <button className="org-link" disabled={busy} onClick={() => voidIt(e)}>ยกเลิกซอง</button>}</td>
-            </tr>
-          ))}
-          {ledger.items.length === 0 && <tr><td colSpan={6} className="empty">ยังไม่มีซองทำบุญที่บันทึก</td></tr>}
-        </tbody>
-      </table>
-    </section>
-  );
-};
-
 /* =========================================================== กำหนดการ */
 const ScheduleTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) => void }> = ({ board, flash }) => {
   const { job } = board;
@@ -668,7 +611,7 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
   }, [job.id, flash]);
   useEffect(() => {
     load();
-  }, [load, board.steps, board.ledger.total, board.vendors]);
+  }, [load, board.steps, board.vendors]);
 
   const setStatus = async (status: "IN_PROGRESS" | "COMPLETED") => {
     setBusy(true);
@@ -702,18 +645,16 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
       <div className="org-sumgrid">
         <div className="org-stat"><div className="org-stat-top"><span>ขั้นตอนพิธี</span></div><h3>{sum.steps.done} / {sum.steps.total}</h3><p>เสร็จ {pct}% ของที่เริ่มสร้างไว้</p></div>
         <div className="org-stat"><div className="org-stat-top"><span>ตรวจรับคู่ค้า</span></div><h3>{sum.vendors.received} / {sum.vendors.total}</h3><p>{sum.vendors.total - sum.vendors.received === 0 ? "ครบทุกรายการ" : `ค้าง ${sum.vendors.total - sum.vendors.received} รายการ`}</p></div>
-        <div className="org-stat"><div className="org-stat-top"><span>ซองทำบุญ</span></div><h3>{baht(sum.ledger.total)}</h3><p>{sum.ledger.count} ซอง (ยกเลิก {sum.ledger.voidedCount})</p></div>
         <div className="org-stat"><div className="org-stat-top"><span>บุคลากรที่จัดเข้าพิธี</span></div><h3>{sum.assignments}</h3><p>รายการจัดเวร</p></div>
       </div>
       <table className="org-table">
-        <thead><tr><th>วันที่</th><th>ประเภท</th><th>ขั้นตอนที่เสร็จ</th><th className="r">ซองทำบุญ</th></tr></thead>
+        <thead><tr><th>วันที่</th><th>ประเภท</th><th>ขั้นตอนที่เสร็จ</th></tr></thead>
         <tbody>
           {sum.nights.map((n) => (
             <tr key={n.date}>
               <td>{thDate(n.date)}</td>
               <td>{n.kind === "CREMATION" ? "ฌาปนกิจ" : "สวดพระอภิธรรม"}</td>
               <td>{n.stepsTotal ? `${n.stepsDone} / ${n.stepsTotal}` : <span className="muted">ยังไม่เริ่ม</span>}</td>
-              <td className="r">{baht(n.envelopeTotal)}</td>
             </tr>
           ))}
         </tbody>

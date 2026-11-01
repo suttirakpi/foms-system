@@ -1,10 +1,10 @@
 // controllers/opsController.js
 // ฝั่งทีมจัดงานหน้างาน (OPS): งานที่รับผิดชอบ, ติ๊กขั้นตอนพิธีรายคืน, ตรวจรับของคู่ค้า,
-// บัญชีซองทำบุญ, จัดบุคลากรเข้ากำหนดการ, สรุปงาน และเปลี่ยนสถานะงาน (เริ่ม/เสร็จสิ้น)
+// จัดบุคลากรเข้ากำหนดการ, สรุปงาน และเปลี่ยนสถานะงาน (เริ่ม/เสร็จสิ้น)
 // OPS ที่มีวัดสังกัดเห็นเฉพาะงานของวัดตัวเอง ส่วน ADMIN (หรือ OPS ที่ไม่มีวัดสังกัด) เห็นทุกวัด
 const {
   Booking, Addon, Person, PersonAssignment, ScheduleItem, TempleRule,
-  RunStep, VendorDelivery, MeritEnvelope,
+  RunStep, VendorDelivery,
 } = require("../models");
 const { addDays, dateToStr, isValidDateStr, todayInBangkok } = require("../utils/dates");
 
@@ -96,7 +96,7 @@ const CHANT_TEMPLATE = [
   [-15, 15, "นิมนต์พระภิกษุสงฆ์ขึ้นสู่อาสน์สงฆ์ และจัดเตรียมเครื่องไทยธรรม", "มัคนายกนำเทียนอาราธนาธรรม และจัดเตรียมที่นั่งประธานพิธีสงฆ์"],
   [0, 45, "พิธีสวดพระอภิธรรม", "จุดเทียนบูชาพระรัตนตรัย ธูปเทียนหน้าตู้พระอภิธรรมและหน้าศพ"],
   [45, 30, "เจ้าภาพทอดผ้าบังสุกุล ถวายจตุปัจจัยไทยธรรม กรวดน้ำรับพร", "จัดเตรียมพานผ้ามหาบังสุกุลและกรวดน้ำส่งมอบเจ้าภาพ"],
-  [75, 15, "สรุปยอดซองร่วมทำบุญเข้าบัญชีดิจิทัลและส่งมอบเจ้าภาพ", "ตรวจนับและปิดบัญชีหน้างานร่วมกับตัวแทนครอบครัว"],
+  [75, 15, "ปิดพิธีและส่งมอบเจ้าภาพ", "สรุปงานหน้างานร่วมกับตัวแทนครอบครัวและเก็บอุปกรณ์"],
 ];
 // วันฌาปนกิจ
 const CREMATION_TEMPLATE = [
@@ -104,7 +104,7 @@ const CREMATION_TEMPLATE = [
   [-60, 30, "ตั้งขบวนและเชิญหีบศพออกจากศาลา", "จัดขบวนเจ้าภาพและพระสงฆ์ เชิญหีบศพขึ้นรถนำไปยังเมรุ"],
   [-15, 15, "เวียนเมรุ ๓ รอบ และเชิญหีบศพขึ้นเมรุ", "นำโดยพระสงฆ์ เวียนซ้าย ๓ รอบ"],
   [0, 45, "พิธีฌาปนกิจ: ทอดผ้าบังสุกุลและเทศน์ธรรม", "ทอดผ้าบังสุกุล พระสงฆ์ชักผ้า และถวายเพลิง/ดอกไม้จันทน์"],
-  [60, 30, "ปิดพิธี สรุปซองทำบุญ และส่งมอบเจ้าภาพ", "ตรวจนับและปิดบัญชีหน้างาน เก็บอุปกรณ์"],
+  [60, 30, "ปิดพิธีและส่งมอบเจ้าภาพ", "สรุปงานหน้างาน เก็บอุปกรณ์"],
 ];
 
 async function buildSteps(booking, date) {
@@ -132,23 +132,14 @@ const vendorDto = (v) => ({
   id: String(v._id), category: v.category, title: v.title, partner: v.partner, expectedTime: v.expectedTime,
   detail: v.detail, status: v.status, receivedByName: v.receivedByName, receivedAt: v.receivedAt, ref: v.ref, note: v.note,
 });
-const envelopeDto = (e) => ({
-  id: String(e._id), date: e.date, donorName: e.donorName, amount: e.amount, note: e.note,
-  recordedByName: e.recordedByName, createdAt: e.createdAt, voided: e.voided, voidReason: e.voidReason, voidedByName: e.voidedByName,
-});
-function ledgerTotals(rows) {
-  const valid = rows.filter((e) => !e.voided);
-  return { total: valid.reduce((s, e) => s + e.amount, 0), count: valid.length, voidedCount: rows.length - valid.length };
-}
 
 exports.board = wrap(async (req, res) => {
   const booking = await loadJob(req, res);
   if (!booking) return;
   const date = pickDate(booking, req.query.date);
-  const [steps, vendors, envelopes, items] = await Promise.all([
+  const [steps, vendors, items] = await Promise.all([
     RunStep.find({ bookingId: booking._id, date }).sort({ n: 1 }).lean(),
     VendorDelivery.find({ bookingId: booking._id }).sort({ createdAt: 1 }).lean(),
-    MeritEnvelope.find({ bookingId: booking._id }).sort({ createdAt: 1 }).lean(),
     ScheduleItem.find({ bookingId: booking._id, date }).sort({ sortOrder: 1, time: 1 }).lean(),
   ]);
   const nights = [];
@@ -161,7 +152,6 @@ exports.board = wrap(async (req, res) => {
     live: LIVE.includes(booking.status),
     steps: steps.map(stepDto),
     vendors: vendors.map(vendorDto),
-    ledger: { items: envelopes.map(envelopeDto), ...ledgerTotals(envelopes) },
     scheduleItems: items.map((i) => ({ id: String(i._id), time: i.time || "", type: i.type, title: i.title })),
   });
 });
@@ -268,40 +258,6 @@ exports.updateVendor = wrap(async (req, res) => {
   res.json(vendorDto(v));
 });
 
-// ---------------------------------------------------------------- ซองทำบุญ
-exports.addEnvelope = wrap(async (req, res) => {
-  const booking = await loadJob(req, res);
-  if (!booking) return;
-  if (!LIVE.includes(booking.status)) return res.status(409).json({ message: "งานนี้ปิดแล้วหรือยังไม่ได้รับอนุมัติ จึงบันทึกซองไม่ได้" });
-  const b = req.body || {};
-  const amount = Number(b.amount);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) return bad(res, "จำนวนเงินต้องมากกว่า 0 และไม่เกิน 10,000,000 บาท");
-  const date = b.date && isValidDateStr(b.date) ? b.date : pickDate(booking);
-  if (date < dateToStr(booking.startDate) || date > dateToStr(booking.endDate)) return bad(res, "วันที่ต้องอยู่ในช่วงของงาน");
-  const e = await MeritEnvelope.create({
-    bookingId: booking._id, date, amount: Math.round(amount * 100) / 100,
-    donorName: str(b.donorName) || "ไม่ประสงค์ออกนาม", note: str(b.note),
-    recordedBy: req.user._id, recordedByName: req.user.name,
-  });
-  res.status(201).json(envelopeDto(e));
-});
-
-exports.voidEnvelope = wrap(async (req, res) => {
-  if (!isId(req.params.id)) return bad(res, "รหัสไม่ถูกต้อง");
-  const reason = str(req.body && req.body.reason);
-  if (!reason) return bad(res, "กรุณาระบุเหตุผลที่ยกเลิกซอง");
-  const e = await MeritEnvelope.findById(req.params.id).lean();
-  if (!e) return res.status(404).json({ message: "ไม่พบรายการซอง" });
-  if (!(await loadJob(req, res, String(e.bookingId)))) return;
-  const upd = await MeritEnvelope.findOneAndUpdate(
-    { _id: e._id, voided: false },
-    { voided: true, voidReason: reason.slice(0, 300), voidedByName: req.user.name, voidedAt: new Date() },
-    { new: true },
-  );
-  if (!upd) return res.status(409).json({ message: "รายการนี้ถูกยกเลิกไปแล้ว" });
-  res.json(envelopeDto(upd));
-});
-
 // ---------------------------------------------------------------- จัดบุคลากรเข้ากำหนดการ
 exports.assignments = wrap(async (req, res) => {
   const booking = await loadJob(req, res);
@@ -351,27 +307,23 @@ exports.unassign = wrap(async (req, res) => {
 exports.summary = wrap(async (req, res) => {
   const booking = await loadJob(req, res);
   if (!booking) return;
-  const [steps, vendors, envelopes, assignments] = await Promise.all([
+  const [steps, vendors, assignments] = await Promise.all([
     RunStep.find({ bookingId: booking._id }).lean(),
     VendorDelivery.find({ bookingId: booking._id }).lean(),
-    MeritEnvelope.find({ bookingId: booking._id }).sort({ createdAt: 1 }).lean(),
     PersonAssignment.countDocuments({ bookingId: booking._id }),
   ]);
   const nights = [];
   for (let d = dateToStr(booking.startDate); d <= dateToStr(booking.endDate); d = addDays(d, 1)) {
     const ds = steps.filter((s) => s.date === d);
-    const env = envelopes.filter((e) => e.date === d);
     nights.push({
       date: d, kind: d === dateToStr(booking.endDate) ? "CREMATION" : "CHANT",
       stepsTotal: ds.length, stepsDone: ds.filter((s) => s.status === "done").length,
-      envelopeTotal: ledgerTotals(env).total,
     });
   }
   res.json({
     job: jobDto(booking), nights,
     steps: { total: steps.length, done: steps.filter((s) => s.status === "done").length },
     vendors: { total: vendors.length, received: vendors.filter((v) => v.status === "RECEIVED").length },
-    ledger: ledgerTotals(envelopes),
     assignments,
     canStart: ["CONFIRMED", "PAID"].includes(booking.status),
     canComplete: booking.status === "IN_PROGRESS",
