@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
+import { staffFetch, thaiDate } from "../staffApi";
 import "./TempleStaffCalendar.css";
 
 interface TempleStaffCalendarProps {
@@ -12,10 +13,11 @@ interface TempleStaffCalendarProps {
   onLogout?: () => void;
 }
 
-type HallKey = "ศาลา 1" | "ศาลา 2" | "ศาลา 3" | "เมรุหลวง";
+type HallKey = string; // ชื่อศาลาแบบสั้น เช่น "ศาลา 1" (ตัดวงเล็บท้ายชื่อจาก DB)
 type HallFilter = "ALL" | HallKey;
 
 interface ScheduleItem {
+  date?: string; // YYYY-MM-DD ของวันที่จัดพิธี
   time: string;
   title: string;
   desc: string;
@@ -67,161 +69,47 @@ const MONKS: Record<string, { name: string; detail: string }> = {
 // พระสงฆ์ที่ยังไม่ได้จัดเวร ใช้เป็นตัวสำรองตอนเปลี่ยนตัว
 const SPARE_POOL = ["m8", "m9"];
 
-const INITIAL_EVENTS: CalEvent[] = [
-  {
-    id: "e-0042",
-    ref: "FOMS-2569-0042",
-    hall: "ศาลา 2",
-    hallFull: "ศาลา 2 (เมตตาธรรม)",
-    place: "ขนาดห้อง 150 ที่นั่ง",
-    start: "2026-07-13",
-    end: "2026-07-17",
-    cremationISO: "2026-07-18",
-    cremationTime: "16:00",
-    deceased: "คุณพ่อสมเกียรติ ภักดี",
-    deceasedNote: "อายุ ๘๕ ปี (ชาตะ ๒๔๘๔ - มรณะ ๒๕๖๙)",
-    host: "คุณศรัทธา ภักดี และครอบครัว",
-    hostNote: "ผู้ประสานงานหลัก: 081-445-XXXX (แขกประมาณ 150 ท่าน)",
-    schedule: [
-      {
-        time: "18:30 น.",
-        title: "เจ้าภาพและญาติพร้อม ณ ศาลา ๒",
-        desc: "มัคนายกประจำศาลา: นายประจักษ์ จัดดีดี ตรวจความพร้อมโต๊ะหมู่บูชา",
-      },
-      {
-        time: "19:00 น.",
-        title: "พิธีสวดพระอภิธรรม ๔ จบ",
-        desc: "พระสงฆ์ ๔ รูป ประธานฝ่ายสงฆ์ (คณะกฎี ๓)",
-      },
-    ],
-    monkTime: "19:00",
-    monks: ["m1", "m2", "m3", "m4"],
-    note: "เครื่องสังฆทาน: ไทยธรรมสมเกียรติ ๔ ชุด · ตกแต่ง: ดอกไม้ไทยขาว-เขียว · บริการเสริม: อาหารว่างกล่อง ๑๕๐ ชุด",
-  },
-  {
-    id: "e-0046",
-    ref: "FOMS-2569-0046",
-    hall: "ศาลา 3",
-    hallFull: "ศาลาใหญ่ 3 (สันติสุขาราม)",
-    place: "ศาลาปรับขนาดความจุ 300 ที่นั่ง",
-    start: "2026-07-15",
-    end: "2026-07-21",
-    cremationISO: "2026-07-22",
-    cremationTime: "17:00",
-    deceased: "พล.อ.ท. วิสูตร ชัยสิทธิกุล",
-    deceasedNote: "อดีตผู้บงคุณวุฒิกองทัพอากาศ (มีพิธีพระราชทานน้ำหลวงอาบศพ)",
-    host: "พญ. ปรียาภรณ์ ชัยสิทธิกุล (บุตรสาว)",
-    hostNote: "นายทหารประสานงาน: น.ท. บรินทร์ (แขกผู้มีเกียรติ ~300 ท่าน)",
-    schedule: [
-      {
-        time: "16:30 น.",
-        title: "พิธีน้ำหลวงอาบศพ และบรรจุหีบ",
-        desc: "เจ้าพนักงานพระราชพิธีพร้อมตรวจการตกแต่งโกศ/หีบเกียรติยศ",
-      },
-      {
-        time: "19:00 น.",
-        title: "สวดพระอภิธรรมท่านหลวง ๔ จบ",
-        desc: "พระธรรมสังฆ์พิธีชาติ (คณะกฎี ๑ ปฏิบัติการ)",
-      },
-    ],
-    monkTime: "19:00",
-    monks: ["m10", "m11", "m12", "m13"],
-    note: "บันทึกพิเศษ: แขก VIP ผู้บังคับบัญชาระดับสูงกองทัพอากาศ จัดเตรียมโซนคล้อยสำรองและเจ้าหน้าที่ประจำเครื่องพร้อมปฏิบัติการ",
-  },
-  {
-    id: "e-0047",
-    ref: "FOMS-2569-0047",
-    hall: "ศาลา 1",
-    hallFull: "ศาลา 1 (การุณยสถาน)",
-    place: "ศาลาขนาดเล็ก (60 ที่นั่ง)",
-    start: "2026-07-13",
-    end: "2026-07-15",
-    cremationISO: "2026-07-16",
-    cremationTime: "14:00",
-    deceased: "คุณย่าละม่อม เจริญวงศ์",
-    deceasedNote: "อายุ ๙๖ ปี (ฌาปนกิจพรุ่งนี้ 16 ก.ค. เวลา 14:00 น.)",
-    host: "คุณกิตติศักดิ์ เจริญวงศ์ (หลานชาย)",
-    hostNote: "เบอร์ติดต่อ: 089-112-XXXX (ผู้ร่วมงานประมาณ 60 ท่าน)",
-    schedule: [
-      {
-        time: "19:00 น.",
-        title: "สวดพระอภิธรรม คืนสุดท้าย",
-        desc: "คิวพระสงฆ์ ๔ รูป (๑๙:๐๐ น.) รอการยืนยันเมื่อไม่ซ้ำซ้อน",
-      },
-    ],
-    monkTime: "19:00",
-    monks: ["m5", "m6", "m7", "m2"],
-  },
-  {
-    id: "e-0038",
-    ref: "FOMS-2569-0038",
-    hall: "เมรุหลวง",
-    hallFull: "เมรุหลวง (สุคตาลัย) — พิธีฌาปนกิจ",
-    place: "ย้ายจากศาลา ๒ เนื่องจากขยายพิธีสู่เมรุ",
-    start: "2026-07-15",
-    end: "2026-07-15",
-    cremationISO: "2026-07-15",
-    cremationTime: "16:00",
-    deceased: "คุณยายสมศรี สุวรรณเวช (อายุ ๘๙ ปี)",
-    deceasedNote: "เจ้าภาพ: รศ.ดร. ภาคม สุวรรณเวช คณะนิติศาสตร์ที่มหาวิทยาลัย",
-    host: "ผู้ร่วมพิธีประมาณ ๑๖๐ ท่าน",
-    hostNote: "",
-    schedule: [
-      {
-        time: "13:30 น.",
-        title: "เชิญหีบศพเวียนเมรุรอบเมรุ",
-        desc: "เวียนสุดารัญชิ (ซ้าย) ๓ รอบ นำโดยพระสงฆ์ ๑ รูป",
-      },
-      {
-        time: "14:00 น.",
-        title: "แสดงพระธรรมเทศนา ๑ กัณฑ์",
-        desc: "โดย พระพรหมบัณฑิต (พร้อมขึ้นธรรมาสน์เทศน์)",
-      },
-      {
-        time: "16:00 น.",
-        title: "ทอดผ้าบังสุกุล / ประชุมเพลิง",
-        desc: "พระสงฆ์สดับปกรณ์ ๑๐ รูป และ แห่ผ้าพระ",
-      },
-    ],
-    monks: [],
-    note: "เตาเผาศพไร้ควันระบบแก๊สไฟฟ้า: พร้อมใช้งาน 100% (หัวเผาผ่านการทดสอบรอบ 09:00 น.)",
-  },
-  // กิจกรรมอื่นในเดือน ใช้ให้ปฏิทินมีจุดครบ (ไม่มีรายละเอียดคณะสงฆ์)
-  ...(
-    [
-      ["e-f1", "ศาลา 1", "2026-07-01", "2026-07-04"],
-      ["e-f2", "ศาลา 2", "2026-07-06", "2026-07-10"],
-      ["e-f3", "ศาลา 1", "2026-07-20", "2026-07-23"],
-      ["e-f4", "ศาลา 1", "2026-07-27", "2026-07-29"],
-      ["e-f5", "ศาลา 3", "2026-07-29", "2026-07-30"],
-    ] as [string, HallKey, string, string][]
-  ).map(
-    ([id, hall, start, end], i): CalEvent => ({
-      id,
-      ref: `FOMS-2569-00${10 + i}`,
-      hall,
-      hallFull: hall,
-      place: "",
-      start,
-      end,
-      deceased: "(รายละเอียดงาน)",
-      deceasedNote: "",
-      host: "-",
-      hostNote: "",
-      schedule: [],
-      monks: [],
-    }),
-  ),
-];
+// งานที่ backend ส่งมา (GET /api/staff/calendar)
+interface ApiCalEvent {
+  id: string;
+  ref: string;
+  hallName: string;
+  hallCapacity: number;
+  start: string;
+  end: string;
+  cremationISO: string;
+  deceasedName: string;
+  hostName: string;
+  hostPhone: string;
+  guests: number;
+  packageName: string;
+  addons: string[];
+  schedule: { date: string; time: string; type: string; title: string }[];
+}
 
-const HALL_FILTERS: HallFilter[] = [
-  "ALL",
-  "ศาลา 1",
-  "ศาลา 2",
-  "ศาลา 3",
-  "เมรุหลวง",
-];
-const HALLS_ONLY: HallKey[] = ["ศาลา 1", "ศาลา 2", "ศาลา 3"];
+// หมายเหตุ: ระบบยังไม่เก็บคิวพระสงฆ์ต่อคืน จึงส่ง monks เป็นว่าง (ส่วนจัดพระยังเป็นหน้าจอจำลอง)
+const toCalEvent = (e: ApiCalEvent): CalEvent => ({
+  id: e.id,
+  ref: e.ref,
+  hall: e.hallName.split(" (")[0],
+  hallFull: e.hallName,
+  place: e.hallCapacity ? `ความจุ ${e.hallCapacity} ที่นั่ง` : "",
+  start: e.start,
+  end: e.end,
+  cremationISO: e.cremationISO,
+  deceased: e.deceasedName,
+  deceasedNote: `${e.packageName} · ฌาปนกิจ ${thaiDate(e.cremationISO)}`,
+  host: e.hostName,
+  hostNote: `โทร ${e.hostPhone || "-"} (แขกประมาณ ${e.guests} ท่าน)`,
+  schedule: e.schedule.map((s) => ({
+    date: s.date,
+    time: s.time ? `${s.time} น.` : "",
+    title: s.title,
+    desc: thaiDate(s.date),
+  })),
+  monks: [],
+  note: e.addons.length ? `บริการเสริม: ${e.addons.join(" · ")}` : undefined,
+});
 
 const TH_MONTHS = [
   "มกราคม",
@@ -271,9 +159,23 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
-  const [events, setEvents] = useState<CalEvent[]>(INITIAL_EVENTS);
-  const [selected, setSelected] = useState("2026-07-15");
-  const [month, setMonth] = useState({ y: 2026, m: 6 });
+  const todayISO = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Bangkok",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date()),
+    [],
+  );
+  const [events, setEvents] = useState<CalEvent[]>([]);
+  const [loadError, setLoadError] = useState("");
+  const [selected, setSelected] = useState(todayISO);
+  const [month, setMonth] = useState(() => {
+    const [y, m] = todayISO.split("-").map(Number);
+    return { y, m: m - 1 };
+  });
   const [hallFilter, setHallFilter] = useState<HallFilter>("ALL");
   const [showSpare, setShowSpare] = useState(false);
   const [toast, setToast] = useState("");
@@ -283,7 +185,28 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
     window.setTimeout(() => setToast(""), 3500);
   };
 
-  const todayISO = "2026-07-15"; // วันนี้ของข้อมูลตัวอย่าง
+  // โหลดงานของเดือนที่เปิดอยู่ทุกครั้งที่เปลี่ยนเดือน
+  useEffect(() => {
+    let cancelled = false;
+    setLoadError("");
+    staffFetch<ApiCalEvent[]>(`/calendar?month=${month.y}-${pad(month.m + 1)}`)
+      .then((rows) => !cancelled && setEvents(rows.map(toCalEvent)))
+      .catch((err) => {
+        if (cancelled) return;
+        setEvents([]);
+        setLoadError(err instanceof Error ? err.message : "โหลดปฏิทินไม่สำเร็จ");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [month]);
+
+  // ชื่อศาลาที่มีงานในเดือนนี้ ใช้ทำปุ่มกรองและการ์ดสรุป
+  const hallNames = useMemo(
+    () => Array.from(new Set(events.map((e) => e.hall))).sort(),
+    [events],
+  );
+  const HALL_FILTERS: HallFilter[] = ["ALL", ...hallNames];
 
   const dayEvents = useMemo(
     () =>
@@ -411,7 +334,7 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
 
   // การ์ดสรุปด้านบน (คำนวณจากวันที่เลือก)
   const activeAll = events.filter((e) => isActiveOn(e, selected));
-  const hallsOpen = HALLS_ONLY.filter((h) =>
+  const hallsOpen = hallNames.filter((h) =>
     activeAll.some((e) => e.hall === h),
   ).length;
   const monkSet = new Set(
@@ -501,7 +424,10 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
           <span className="cal-stat-label">ศาลาเปิดงานนี้</span>
           <div className="cal-stat-value">
             {hallsOpen}{" "}
-            <small>/ 3 หลัง {hallsOpen === 3 ? "(เต็ม)" : ""}</small>
+            <small>
+              / {hallNames.length} หลัง{" "}
+              {hallNames.length > 0 && hallsOpen === hallNames.length ? "(เต็ม)" : ""}
+            </small>
           </div>
         </div>
         <div className="cal-stat">
@@ -572,6 +498,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                 </button>
               ))}
             </div>
+
+            {loadError && <p className="cal-event-note">{loadError}</p>}
 
             <div className="cal-grid">
               {TH_DAYS_SHORT.map((d) => (
@@ -782,8 +710,8 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                   <>
                     <span className="cal-kicker">กำหนดเวลาพิธีการ</span>
                     <div className="cal-schedule">
-                      {e.schedule.map((s) => (
-                        <div key={s.time + s.title} className="cal-sch">
+                      {e.schedule.filter((s) => !s.date || s.date === selected).map((s) => (
+                        <div key={s.date + s.time + s.title} className="cal-sch">
                           <b>{s.time}</b>
                           <strong>{s.title}</strong>
                           <p>{s.desc}</p>

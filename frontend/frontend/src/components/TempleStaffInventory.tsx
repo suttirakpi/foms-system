@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
+import { staffFetch } from "../staffApi";
 import "./TempleStaffInventory.css";
 
 interface TempleStaffInventoryProps {
@@ -33,114 +34,20 @@ const STATUS_LABEL: Record<StockStatus, string> = {
   READY: "พร้อมใช้งาน",
 };
 
-const CATEGORY_CHIPS = [
-  { label: "เครื่องไทยธรรมและสังฆทาน", count: 8 },
-  { label: "เก้าอี้และโต๊ะรับรอง", count: 6 },
-  { label: "อุปกรณ์ประกอบพิธีสงฆ์", count: 12 },
-  { label: "ของใช้สิ้นเปลืองในพิธี", count: 7 },
-  { label: "เครื่องเสียงและไฟส่องสว่าง", count: 5 },
+const CATEGORY_LABELS = [
+  "เครื่องไทยธรรมและสังฆทาน",
+  "เก้าอี้และโต๊ะรับรอง",
+  "อุปกรณ์ประกอบพิธีสงฆ์",
+  "ของใช้สิ้นเปลืองในพิธี",
+  "เครื่องเสียงและไฟส่องสว่าง",
 ];
 
 const ALL_CATEGORIES = [
-  ...CATEGORY_CHIPS.map((c) => c.label),
+  ...CATEGORY_LABELS,
   "อุปกรณ์รักษาและประกอบพิธี",
 ];
 
 const PAGE_SIZE = 8;
-const TOTAL_ITEMS = 38;
-const TOTAL_PAGES = 3;
-
-// ข้อมูลตัวอย่างสำหรับขึ้นหน้าจอ รอเชื่อม API คลังอุปกรณ์
-const INITIAL_ITEMS: InventoryItem[] = [
-  {
-    sku: "SKU-CER-001",
-    name: "ชุดโต๊ะหมู่บูชาไม้สักทอง",
-    desc: "หมู่ 9 ปิดทองคำเปลวแท้โบราณ ลวดลายปิดทองกระจังตาอ้อย",
-    category: "อุปกรณ์ประกอบพิธีสงฆ์",
-    unit: "ชุด",
-    total: 4,
-    ready: 1,
-    usingNote: "ศาลา 1, 2, 3",
-    status: "IN_USE",
-  },
-  {
-    sku: "SKU-CHR-014",
-    name: "เก้าอี้หลุยส์ไม้สักบุเบาะผ้าไหมสีงาช้าง (VIP)",
-    desc: "โครงไม้สักสลักลวดลายไทย ประจำพื้นที่ประธานและแขกผู้มีเกียรติ",
-    category: "เก้าอี้และโต๊ะรับรอง",
-    unit: "ตัว",
-    total: 200,
-    ready: 50,
-    usingNote: "ศาลาใหญ่ 3",
-    status: "PARTIAL",
-  },
-  {
-    sku: "SKU-SAN-005",
-    name: "ชุดเครื่องไทยธรรมและผ้าไตรครองพรีเมียม",
-    desc: "กล่องผ้าไหมแท้ บรรจุผ้าไตรมัสลินเกรดประณีตพร้อมย่ามและตาลปัตร",
-    category: "เครื่องไทยธรรมและสังฆทาน",
-    unit: "ชุด",
-    total: 30,
-    ready: 6,
-    usingNote: "เบิกสวดพระอภิธรรม",
-    status: "LOW",
-  },
-  {
-    sku: "SKU-CHR-002",
-    name: "เก้าอี้พนักพิงสีขาวมาตรฐาน",
-    desc: "โครงเหล็กหนาพร้อมปลอกคลุมผ้าโทเรสีขาวสุภาพ รีดเรียบฆ่าเชื้อ",
-    category: "เก้าอี้และโต๊ะรับรอง",
-    unit: "ตัว",
-    total: 1200,
-    ready: 650,
-    usingNote: "ศาลา 1 และลานพิธี",
-    status: "READY",
-  },
-  {
-    sku: "SKU-FLW-009",
-    name: "ดอกไม้จันทน์เกรดประณีต (ไม้โมกธรรมชาติ)",
-    desc: "งานประดิษฐ์กลีบผกาซ้อน ไม้โมกแห้งสนิท ไร้เขม่าควันดำ",
-    category: "ของใช้สิ้นเปลืองในพิธี",
-    unit: "ดอก",
-    total: 2500,
-    ready: 450,
-    usingNote: "ส่งมอบเมรุหลวง",
-    status: "LOW",
-  },
-  {
-    sku: "SKU-MIC-003",
-    name: "ชุดไมโครโฟนไร้สายและแท่นเทศน์พระธรรมกถึก",
-    desc: "ย่านความถี่ UHF พร้อมระบบตัดสัญญาณสะท้อนเสียงสวดพระพุทธมนต์",
-    category: "เครื่องเสียงและไฟส่องสว่าง",
-    unit: "ชุด",
-    total: 6,
-    ready: 2,
-    usingNote: "ศาลา 1–3, เมรุ",
-    status: "IN_USE",
-  },
-  {
-    sku: "SKU-URN-007",
-    name: "พานทองเหลืองขัดเงาและผ้าคลุมลูกไม้สีงาช้าง",
-    desc: "พานขนาดเส้นผ่านศูนย์กลาง 14 นิ้ว สำหรับทอดผ้าบังสุกุลและวางเครื่องไทยธรรม",
-    category: "อุปกรณ์ประกอบพิธีสงฆ์",
-    unit: "ชุด",
-    total: 25,
-    ready: 15,
-    usingNote: "ศาลา 2 และ 3",
-    status: "READY",
-  },
-  {
-    sku: "SKU-COL-002",
-    name: "ตู้หีบเย็นรักษาสภาพ (ดิจิทัลเทมป์ คอนโทรล)",
-    desc: "ระบบควบคุมความเย็นมาตรฐานโรงพยาบาล พร้อมแผงตกแต่งลายกระจกทอง",
-    category: "อุปกรณ์รักษาและประกอบพิธี",
-    unit: "หลัง",
-    total: 5,
-    ready: 1,
-    usingNote: "ศาลา 1, 2, 3 และห้องพักศพ",
-    status: "IN_USE",
-  },
-];
 
 const EMPTY_FORM: InventoryItem = {
   sku: "",
@@ -164,7 +71,10 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
-  const [items, setItems] = useState<InventoryItem[]>(INITIAL_ITEMS);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("ALL");
   const [status, setStatus] = useState("ALL");
@@ -177,6 +87,22 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
     setToast(msg);
     window.setTimeout(() => setToast(""), 3500);
   };
+
+  useEffect(() => {
+    staffFetch<InventoryItem[]>("/inventory")
+      .then(setItems)
+      .catch((err) => setLoadError(err instanceof Error ? err.message : "โหลดคลังอุปกรณ์ไม่สำเร็จ"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const categoryChips = useMemo(
+    () =>
+      CATEGORY_LABELS.map((label) => ({
+        label,
+        count: items.filter((i) => i.category === label).length,
+      })),
+    [items],
+  );
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -191,8 +117,9 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
   }, [items, search, category, status]);
 
   const filtering = search.trim() !== "" || category !== "ALL" || status !== "ALL";
-  // หน้า 1 มีข้อมูลตัวอย่างจริง หน้าอื่นรอข้อมูลจาก API
-  const shown = filtering || page === 1 ? visible : [];
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const shown = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const openAdd = () => {
     setEditingSku(null);
@@ -203,9 +130,9 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
     setForm({ ...item });
   };
 
-  const saveForm = (e: React.FormEvent) => {
+  const saveForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form) return;
+    if (!form || saving) return;
     const clean: InventoryItem = {
       ...form,
       sku: form.sku.trim().toUpperCase(),
@@ -213,21 +140,27 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
       ready: Math.min(form.ready, form.total),
     };
     if (!clean.sku || !clean.name) return;
-    if (editingSku === null && items.some((i) => i.sku === clean.sku)) {
-      flash(`รหัสพัสดุ ${clean.sku} มีอยู่แล้ว`);
-      return;
+    setSaving(true);
+    try {
+      const saved =
+        editingSku === null
+          ? await staffFetch<InventoryItem>("/inventory", { method: "POST", body: clean })
+          : await staffFetch<InventoryItem>(`/inventory/${encodeURIComponent(editingSku)}`, {
+              method: "PATCH",
+              body: clean,
+            });
+      setItems((prev) =>
+        editingSku === null
+          ? [...prev, saved].sort((a, b) => a.sku.localeCompare(b.sku))
+          : prev.map((i) => (i.sku === editingSku ? saved : i)),
+      );
+      setForm(null);
+      flash(editingSku === null ? "เพิ่มรายการอุปกรณ์แล้ว" : "แก้ไขรายการแล้ว");
+    } catch (err) {
+      flash(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setSaving(false);
     }
-    setItems((prev) =>
-      editingSku === null
-        ? [...prev, clean]
-        : prev.map((i) => (i.sku === editingSku ? clean : i)),
-    );
-    setForm(null);
-    flash(
-      editingSku === null
-        ? "เพิ่มรายการอุปกรณ์แล้ว (ข้อมูลจำลอง ยังไม่บันทึกลงระบบ)"
-        : "แก้ไขรายการแล้ว (ข้อมูลจำลอง ยังไม่บันทึกลงระบบ)",
-    );
   };
 
   const exportCsv = () => {
@@ -392,9 +325,9 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
                 setPage(1);
               }}
             >
-              ทั้งหมด ({TOTAL_ITEMS})
+              ทั้งหมด ({items.length})
             </button>
-            {CATEGORY_CHIPS.map((c) => (
+            {categoryChips.map((c) => (
               <button
                 key={c.label}
                 type="button"
@@ -488,9 +421,12 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
                 {shown.length === 0 && (
                   <tr>
                     <td colSpan={8} className="inv-empty">
-                      {filtering
-                        ? "ไม่พบรายการที่ตรงกับเงื่อนไข"
-                        : "หน้านี้ยังไม่มีข้อมูล (ข้อมูลตัวอย่างมีเฉพาะหน้า 1)"}
+                      {loading
+                        ? "กำลังโหลดคลังอุปกรณ์..."
+                        : loadError ||
+                          (filtering
+                            ? "ไม่พบรายการที่ตรงกับเงื่อนไข"
+                            : "ยังไม่มีรายการอุปกรณ์ กดเพิ่มรายการเพื่อเริ่มต้น")}
                     </td>
                   </tr>
                 )}
@@ -500,31 +436,29 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
 
           <div className="inv-pager">
             <span>
-              {filtering ? (
-                <>
-                  พบ <b>{visible.length}</b> รายการ
-                </>
+              {visible.length === 0 ? (
+                <>ไม่มีรายการ</>
               ) : (
                 <>
-                  แสดงรายการที่ <b>{(page - 1) * PAGE_SIZE + 1}</b> ถึง{" "}
-                  <b>{Math.min(page * PAGE_SIZE, TOTAL_ITEMS)}</b> จากทั้งหมด{" "}
-                  <b>{TOTAL_ITEMS}</b> รายการ
+                  แสดงรายการที่ <b>{(currentPage - 1) * PAGE_SIZE + 1}</b> ถึง{" "}
+                  <b>{Math.min(currentPage * PAGE_SIZE, visible.length)}</b> จากทั้งหมด{" "}
+                  <b>{visible.length}</b> รายการ
                 </>
               )}
             </span>
             <div className="inv-pages">
               <button
                 type="button"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
+                disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
               >
                 ก่อนหน้า
               </button>
-              {Array.from({ length: TOTAL_PAGES }, (_, k) => k + 1).map((p) => (
+              {Array.from({ length: totalPages }, (_, k) => k + 1).map((p) => (
                 <button
                   key={p}
                   type="button"
-                  className={p === page ? "active" : ""}
+                  className={p === currentPage ? "active" : ""}
                   onClick={() => setPage(p)}
                 >
                   {p}
@@ -532,8 +466,8 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
               ))}
               <button
                 type="button"
-                disabled={page === TOTAL_PAGES}
-                onClick={() => setPage(page + 1)}
+                disabled={currentPage === totalPages}
+                onClick={() => setPage(currentPage + 1)}
               >
                 ถัดไป
               </button>
@@ -676,7 +610,7 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
               <button type="button" className="inv-btn" onClick={() => setForm(null)}>
                 ยกเลิก
               </button>
-              <button type="submit" className="inv-btn dark">
+              <button type="submit" className="inv-btn dark" disabled={saving}>
                 บันทึก
               </button>
             </div>

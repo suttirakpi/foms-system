@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
+import { StaffBooking, staffFetch, thaiDate, thaiRange } from "../staffApi";
 import "./TempleStaffHistory.css";
 
 interface TempleStaffHistoryProps {
@@ -22,7 +23,7 @@ interface HistoryRecord {
   hostRelation: string;
   deceased: string;
   deceasedNote: string;
-  hall: "ศาลา 1" | "ศาลา 2" | "ศาลา 3";
+  hall: string;
   hallFull: string;
   venue: string;
   startISO: string; // ใช้กรองตามช่วงเวลา
@@ -39,151 +40,41 @@ const STATUS_LABEL: Record<HistStatus, string> = {
   CANCELLED: "ยกเลิกคำขอ",
 };
 
-const TOTAL_ITEMS = 148;
-const TOTAL_PAGES = 22;
 const PAGE_SIZE = 7;
 
 const EXPORT_NOTE = "ข้อมูลจำลอง ยังไม่เชื่อมระบบ";
 
-// ข้อมูลตัวอย่างสำหรับขึ้นหน้าจอ รอเชื่อม API ประวัติของเจ้าหน้าที่วัด
-const RECORDS: HistoryRecord[] = [
-  {
-    ref: "FOMS-2569-0148",
-    bookedAt: "จองเมื่อ 04 ก.พ. 69",
-    host: "นพ.กิตติศักดิ์ ภักดีดำรงกุล",
-    hostPhone: "โทร 081-444-9921",
-    hostRelation: "บุตร",
-    deceased: "คุณพ่อสมเกียรติ ภักดีดำรงกุล",
-    deceasedNote: "อายุ 84 ปี (สวด 5 คืน)",
-    hall: "ศาลา 2",
-    hallFull: "ศาลา 2 (เมตตาธรรม)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-02-10",
-    dateRange: "10 – 14 ก.พ. 2569",
-    tag: "5 คืน · พระราชทานเพลิง",
-    pkg: "Premium ครบวงจร",
-    price: "฿84,000 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-  {
-    ref: "FOMS-2569-0147",
-    bookedAt: "จองเมื่อ 04 ก.พ. 69",
-    host: "คุณหญิงประภาศรี รัตนเวทิน",
-    hostPhone: "โทร 089-112-3344",
-    hostRelation: "ภริยา",
-    deceased: "พล.อ.ต. วิสูตร รัตนเวทิน",
-    deceasedNote: "อายุ 79 ปี (สวด 3 คืน)",
-    hall: "ศาลา 1",
-    hallFull: "ศาลา 1 (การุณยสถาน)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-02-07",
-    dateRange: "07 – 09 ก.พ. 2569",
-    tag: "3 คืน · ฌาปนกิจเสร็จสิ้น",
-    pkg: "Standard สมเกียรติ",
-    price: "฿52,000 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-  {
-    ref: "FOMS-2569-0146",
-    bookedAt: "จองเมื่อ 03 ก.พ. 69",
-    host: "นายธนภัทร สิริวรพงศ์",
-    hostPhone: "โทร 084-991-0023",
-    hostRelation: "หลาน",
-    deceased: "นางนภาลัย สิริวรพงศ์",
-    deceasedNote: "ย้ายไปจัดที่วัดประจำจังหวัด",
-    hall: "ศาลา 3",
-    hallFull: "ศาลา 3 (สันติสุขาราม)",
-    venue: "ปล่อยคิวว่างสู่ระบบ",
-    startISO: "2026-02-05",
-    dateRange: "05 – 07 ก.พ. 2569",
-    tag: "ยกเลิกล่วงหน้า 48 ชม.",
-    pkg: "พอเพียง / ศาสนกิจ",
-    price: "",
-    pkgNote: "คืนเงินมัดจำเรียบร้อย",
-    status: "CANCELLED",
-  },
-  {
-    ref: "FOMS-2569-0145",
-    bookedAt: "จองเมื่อ 01 ก.พ. 69",
-    host: "อาจารย์สุนีย์ บวรวงศ์ไทย",
-    hostPhone: "โทร 086-443-4410",
-    hostRelation: "บุตรสาว",
-    deceased: "คุณแม่จันทร์เพ็ญ บวรวงศ์ไทย",
-    deceasedNote: "อายุ 91 ปี (สวด 7 คืน)",
-    hall: "ศาลา 2",
-    hallFull: "ศาลา 2 (เมตตาธรรม)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-02-02",
-    dateRange: "02 – 08 ก.พ. 2569",
-    tag: "7 คืน · ลอยอังคารปากอ่าว",
-    pkg: "Premium ครบวงจร",
-    price: "฿93,000 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-  {
-    ref: "FOMS-2569-0144",
-    bookedAt: "จองเมื่อ 28 ม.ค. 69",
-    host: "นายอภิวัฒน์ พิทยาภรณ์",
-    hostPhone: "โทร 081-308-7722",
-    hostRelation: "พี่ชาย",
-    deceased: "นายชัยวัฒน์ พิทยาภรณ์",
-    deceasedNote: "อายุ 52 ปี (สวด 3 คืน)",
-    hall: "ศาลา 1",
-    hallFull: "ศาลา 1 (การุณยสถาน)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-01-30",
-    dateRange: "30 ม.ค. – 01 ก.พ. 2569",
-    tag: "3 คืน · ฌาปนกิจเสร็จสิ้น",
-    pkg: "Standard สมเกียรติ",
-    price: "฿44,500 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-  {
-    ref: "FOMS-2569-0143",
-    bookedAt: "จองเมื่อ 24 ม.ค. 69",
-    host: "นางสาววราภรณ์ วงศ์สว่าง",
-    hostPhone: "โทร 091-334-4678",
-    hostRelation: "หลานสาว",
-    deceased: "นายอนงค์ วงศ์สว่าง",
-    deceasedNote: "อายุ 72 ปี (สวด 3 คืน)",
-    hall: "ศาลา 3",
-    hallFull: "ศาลา 3 (สันติสุขาราม)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-01-27",
-    dateRange: "27 – 29 ม.ค. 2569",
-    tag: "3 คืน · บรรจุอัฐิวัด",
-    pkg: "พอเพียง / กุศลสงเคราะห์",
-    price: "฿22,000 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-  {
-    ref: "FOMS-2569-0142",
-    bookedAt: "จองเมื่อ 20 ม.ค. 69",
-    host: "พันตำรวจเอก ธีรเดช เจริญสุข",
-    hostPhone: "โทร 083-441-9988",
-    hostRelation: "บุตร",
-    deceased: "คุณพ่อประจวบ เจริญสุข",
-    deceasedNote: "อายุ 86 ปี (สวด 4 คืน)",
-    hall: "ศาลา 2",
-    hallFull: "ศาลา 2 (เมตตาธรรม)",
-    venue: "เมรุหลวง (สุคตาลัย)",
-    startISO: "2026-01-22",
-    dateRange: "22 – 26 ม.ค. 2569",
-    tag: "4 คืน · พระราชทานเพลิง",
-    pkg: "Premium ครบวงจร",
-    price: "฿86,500 (ชำระแล้ว)",
-    pkgNote: "",
-    status: "COMPLETED",
-  },
-];
+// แปลงงานจาก API เป็นแถวประวัติ
+// หมายเหตุ: ระบบยังไม่เก็บความสัมพันธ์กับผู้วายชนม์/อายุ จึงแสดงเป็น "เจ้าภาพ" และสรุปจำนวนคืน/แขกแทน
+const PAID_LABEL: Record<string, string> = {
+  PAID: "ชำระแล้ว",
+  PARTIAL: "ชำระบางส่วน",
+  SLIP_UPLOADED: "รอตรวจสลิป",
+  UNPAID: "ยังไม่ชำระ",
+};
 
-const DEFAULT_FROM = "2025-01-01";
-const DEFAULT_TO = "2026-02-28";
+const toRecord = (b: StaffBooking): HistoryRecord => ({
+  ref: b.bookingRef,
+  bookedAt: `จองเมื่อ ${thaiDate(b.submittedAt.slice(0, 10))}`,
+  host: b.hostName,
+  hostPhone: `โทร ${b.hostPhone || "-"}`,
+  hostRelation: "เจ้าภาพ",
+  deceased: b.deceasedName,
+  deceasedNote: `สวด ${b.nights} คืน · แขก ${b.guests} ท่าน`,
+  hall: b.hallName.split(" (")[0],
+  hallFull: b.hallName,
+  venue: b.templeName,
+  startISO: b.startISO,
+  dateRange: thaiRange(b.startISO, b.cremationISO),
+  tag: `${b.nights} คืน`,
+  pkg: b.packageName,
+  price: `฿${b.grandTotal.toLocaleString("th-TH")} (${PAID_LABEL[b.paymentStatus] || b.paymentStatus})`,
+  pkgNote: b.rejectReason || b.cancelReason || "ยกเลิกคำขอ",
+  status: b.status === "CANCELLED" ? "CANCELLED" : "COMPLETED",
+});
+
+const DEFAULT_FROM = ""; // ค่าเริ่มต้น = ทุกช่วงเวลา
+const DEFAULT_TO = "";
 
 const TH_MONTHS_SHORT = [
   "ม.ค.",
@@ -219,6 +110,9 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
   onNavigateInventory,
   onLogout,
 }) => {
+  const [records, setRecords] = useState<HistoryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
   const [dateTo, setDateTo] = useState(DEFAULT_TO);
@@ -234,19 +128,31 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
     window.setTimeout(() => setToast(""), 3500);
   };
 
+  useEffect(() => {
+    staffFetch<StaffBooking[]>("/bookings?status=COMPLETED,CANCELLED&sort=desc")
+      .then((rows) => setRecords(rows.map(toRecord)))
+      .catch((err) => setError(err instanceof Error ? err.message : "โหลดประวัติไม่สำเร็จ"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const hallOptions = useMemo(
+    () => Array.from(new Set(records.map((r) => r.hallFull))).sort(),
+    [records],
+  );
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return RECORDS.filter((r) => {
+    return records.filter((r) => {
       if (dateFrom && r.startISO < dateFrom) return false;
       if (dateTo && r.startISO > dateTo) return false;
-      if (hall !== "ALL" && r.hall !== hall) return false;
+      if (hall !== "ALL" && r.hallFull !== hall) return false;
       if (status !== "ALL" && r.status !== status) return false;
       if (!q) return true;
       return [r.ref, r.host, r.deceased, r.hostPhone].some((v) =>
         v.toLowerCase().includes(q),
       );
     });
-  }, [search, dateFrom, dateTo, hall, status]);
+  }, [records, search, dateFrom, dateTo, hall, status]);
 
   const filtering =
     search.trim() !== "" ||
@@ -254,8 +160,9 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
     status !== "ALL" ||
     dateFrom !== DEFAULT_FROM ||
     dateTo !== DEFAULT_TO;
-  // หน้า 1 มีข้อมูลตัวอย่างจริง หน้าอื่นรอข้อมูลจาก API
-  const shown = filtering || page === 1 ? visible : [];
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const shown = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const reset = () => {
     setSearch("");
@@ -290,7 +197,10 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
     setOpenPanel(null);
   };
 
-  const pageButtons: (number | "...")[] = [1, 2, 3, "...", TOTAL_PAGES];
+  const pageButtons: (number | "...")[] =
+    totalPages <= 5
+      ? Array.from({ length: totalPages }, (_, i) => i + 1)
+      : [1, 2, 3, "...", totalPages];
 
   return (
     <div className="his-wrapper">
@@ -495,9 +405,11 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
             }}
           >
             <option value="ALL">ศาลาทั้งหมด (ทุกสถานที่)</option>
-            <option value="ศาลา 1">ศาลา 1 (การุณยสถาน)</option>
-            <option value="ศาลา 2">ศาลา 2 (เมตตาธรรม)</option>
-            <option value="ศาลา 3">ศาลา 3 (สันติสุขาราม)</option>
+            {hallOptions.map((h) => (
+              <option key={h} value={h}>
+                {h}
+              </option>
+            ))}
           </select>
           <select
             className="his-select"
@@ -594,9 +506,12 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
                 {shown.length === 0 && (
                   <tr>
                     <td colSpan={8} className="his-empty">
-                      {filtering
-                        ? "ไม่พบรายการที่ตรงกับเงื่อนไข"
-                        : "หน้านี้ยังไม่มีข้อมูล (ข้อมูลตัวอย่างมีเฉพาะหน้า 1)"}
+                      {loading
+                        ? "กำลังโหลดประวัติ..."
+                        : error ||
+                          (filtering
+                            ? "ไม่พบรายการที่ตรงกับเงื่อนไข"
+                            : "ยังไม่มีงานที่เสร็จสิ้นหรือยกเลิก")}
                     </td>
                   </tr>
                 )}
@@ -606,15 +521,13 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
 
           <div className="his-pager">
             <span>
-              {filtering ? (
-                <>
-                  พบ <b>{visible.length}</b> รายการ
-                </>
+              {visible.length === 0 ? (
+                <>ไม่มีรายการ</>
               ) : (
                 <>
-                  แสดง <b>{((page - 1) * PAGE_SIZE + 1)}</b> ถึง{" "}
-                  <b>{(Math.min(page * PAGE_SIZE, TOTAL_ITEMS))}</b> จากทั้งหมด{" "}
-                  <b>{TOTAL_ITEMS}</b> รายการ
+                  แสดง <b>{(currentPage - 1) * PAGE_SIZE + 1}</b> ถึง{" "}
+                  <b>{Math.min(currentPage * PAGE_SIZE, visible.length)}</b> จากทั้งหมด{" "}
+                  <b>{visible.length}</b> รายการ
                 </>
               )}
             </span>
@@ -622,8 +535,8 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <button
                 type="button"
                 aria-label="หน้าก่อนหน้า"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
+                disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
               >
                 ‹
               </button>
@@ -636,7 +549,7 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
                   <button
                     key={p}
                     type="button"
-                    className={p === page ? "active" : ""}
+                    className={p === currentPage ? "active" : ""}
                     onClick={() => setPage(p)}
                   >
                     {p}
@@ -646,8 +559,8 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <button
                 type="button"
                 aria-label="หน้าถัดไป"
-                disabled={page === TOTAL_PAGES}
-                onClick={() => setPage(page + 1)}
+                disabled={currentPage === totalPages}
+                onClick={() => setPage(currentPage + 1)}
               >
                 ›
               </button>

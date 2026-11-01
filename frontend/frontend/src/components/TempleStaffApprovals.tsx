@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
+import { StaffBooking, staffFetch, thaiDateTime, thaiRange } from "../staffApi";
 import "./TempleStaffApprovals.css";
 
 interface TempleStaffApprovalsProps {
@@ -44,101 +45,35 @@ interface ApprovalRequest {
   decision: Decision;
 }
 
-// ข้อมูลตัวอย่างสำหรับขึ้นหน้าจอ รอเชื่อม API ของเจ้าหน้าที่วัด
-const MOCK_REQUESTS: ApprovalRequest[] = [
-  {
-    id: "1",
-    bookingRef: "FOMS-2569-0045",
-    submittedAt: "12 ก.ค. 09:15 น.",
-    flag: "URGENT",
-    hostName: "คุณศรัทธา ภักดี",
-    hostRelation: "บุตรชาย",
-    hostPhone: "081-892-XXXX",
-    deceasedName: "คุณพ่อสมเกียรติ ภักดี",
-    docStatus: "VERIFIED",
-    hallName: "ศาลา 2 (เมตตาธรรม)",
-    hallCapacity: 150,
-    packageName: "แพ็กเกจ มาตรฐาน",
-    packageNote: "หีบเย็น + ดอกไม้ขาว-เขียว",
-    dateRange: "13 – 17 ก.ค. 2569",
-    startISO: "2026-07-13",
-    nights: 5,
-    cremationDate: "18 ก.ค. 2569",
-    guests: 150,
-    grandTotal: 74000,
-    paymentNote: "มัดจำ 30% รอชำระ",
-    decision: "PENDING",
-  },
-  {
-    id: "2",
-    bookingRef: "FOMS-2569-0046",
-    submittedAt: "12 ก.ค. 10:40 น.",
-    flag: "NORMAL",
-    hostName: "พญ. ปรียาภรณ์ ชัยสิทธิกุล",
-    hostRelation: "บุตรสาว",
-    hostPhone: "089-445-XXXX",
-    deceasedName: "พล.อ.ท. วิสูตร ชัยสิทธิกุล",
-    docStatus: "PENDING",
-    hallName: "ศาลาใหญ่ 3 (สันติสุขาราม)",
-    hallCapacity: 300,
-    packageName: "แพ็กเกจ พรีเมียม ครบวงจร",
-    packageNote: "หีบไม้สักทอง + วงปี่พาทย์นางหงส์",
-    dateRange: "15 – 21 ก.ค. 2569",
-    startISO: "2026-07-15",
-    nights: 7,
-    cremationDate: "22 ก.ค. 2569",
-    guests: 300,
-    grandTotal: 185000,
-    paymentNote: "รออนุมัติก่อนเปิดยอด",
-    decision: "PENDING",
-  },
-  {
-    id: "3",
-    bookingRef: "FOMS-2569-0047",
-    submittedAt: "12 ก.ค. 11:20 น.",
-    flag: "NORMAL",
-    hostName: "คุณกิตติศักดิ์ เจริญวงศ์",
-    hostRelation: "หลาน",
-    hostPhone: "086-778-XXXX",
-    deceasedName: "คุณย่าละม่อม เจริญวงศ์",
-    docStatus: "VERIFIED",
-    hallName: "ศาลา 1 (การุณยสถาน)",
-    hallCapacity: 60,
-    packageName: "แพ็กเกจ เศรษฐกิจ พอเพียง",
-    packageNote: "อุปกรณ์พิธีสงฆ์ครบชุด + สัปเหร่อ",
-    dateRange: "18 – 20 ก.ค. 2569",
-    startISO: "2026-07-18",
-    nights: 3,
-    cremationDate: "21 ก.ค. 2569",
-    guests: 60,
-    grandTotal: 33600,
-    paymentNote: "พร้อมออกใบเสร็จ",
-    decision: "PENDING",
-  },
-  {
-    id: "4",
-    bookingRef: "FOMS-2569-0048",
-    submittedAt: "12 ก.ค. 11:55 น.",
-    flag: "OVER_CAPACITY",
-    hostName: "คุณอรทัย วัฒนากุล",
-    hostRelation: "ภรรยา",
-    hostPhone: "082-331-XXXX",
-    deceasedName: "นายอเนก วัฒนากุล",
-    docStatus: "VERIFIED",
-    hallName: "ศาลา 1 (การุณยสถาน)",
-    hallCapacity: 80,
-    packageName: "แพ็กเกจ มาตรฐาน",
-    packageNote: "ระบุ 120 คน (ความจุจริง 80 คน)",
-    dateRange: "19 – 23 ก.ค. 2569",
-    startISO: "2026-07-19",
-    nights: 5,
-    cremationDate: "24 ก.ค. 2569",
-    guests: 120,
-    grandTotal: 63000,
-    paymentNote: "แนะนำย้ายไปศาลา 2",
-    decision: "PENDING",
-  },
-];
+// แปลงงานจากหน้า API ให้เป็นแถวในตาราง
+// หมายเหตุ: ระบบยังไม่เก็บสถานะใบมรณบัตรและความสัมพันธ์กับผู้วายชนม์ จึงแสดงเป็น "รอตรวจสอบ"/"เจ้าภาพ"
+const toRequest = (b: StaffBooking): ApprovalRequest => ({
+  id: b.id,
+  bookingRef: b.bookingRef,
+  submittedAt: thaiDateTime(b.submittedAt),
+  flag: b.flag,
+  hostName: b.hostName,
+  hostRelation: "เจ้าภาพ",
+  hostPhone: b.hostPhone,
+  deceasedName: b.deceasedName,
+  docStatus: "PENDING",
+  hallName: b.hallName,
+  hallCapacity: b.hallCapacity,
+  packageName: b.packageName,
+  packageNote:
+    b.flag === "OVER_CAPACITY"
+      ? `ระบุ ${b.guests} คน (ความจุจริง ${b.hallCapacity} คน)`
+      : b.addons.join(" + ") || "ไม่มีบริการเสริม",
+  dateRange: thaiRange(b.startISO, b.cremationISO),
+  startISO: b.startISO,
+  nights: b.nights,
+  cremationDate: thaiDate(b.cremationISO),
+  guests: b.guests,
+  grandTotal: b.grandTotal,
+  paymentNote:
+    b.paymentStatus === "UNPAID" ? "ยังไม่ชำระเงิน" : b.paymentStatus === "PAID" ? "ชำระครบแล้ว" : "แนบหลักฐานชำระแล้ว",
+  decision: "PENDING",
+});
 
 type Filter = "ALL" | "URGENT" | string;
 
@@ -217,13 +152,16 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
-  const [requests, setRequests] = useState<ApprovalRequest[]>(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<ApprovalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const [openPanel, setOpenPanel] = useState<"date" | "extra" | null>(null);
-  const [dateFrom, setDateFrom] = useState(MONTH_PRESETS[0].from);
-  const [dateTo, setDateTo] = useState(MONTH_PRESETS[0].to);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [extra, setExtra] = useState<ExtraFilters>(NO_EXTRA);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -234,6 +172,23 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const loadRequests = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const rows = await staffFetch<StaffBooking[]>("/bookings?status=PENDING");
+      setRequests(rows.map(toRequest));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "โหลดคำขอไม่สำเร็จ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
   }, []);
 
   const extraCount = Object.values(extra).filter((v) => v !== "ALL").length;
@@ -272,10 +227,28 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
     });
   }, [pending, search, filter, dateFrom, dateTo, extra]);
 
-  const decide = (id: string, decision: Decision) =>
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, decision } : r)),
-    );
+  const decide = async (id: string, decision: "APPROVED" | "REJECTED") => {
+    let body: { reason: string } | undefined;
+    if (decision === "REJECTED") {
+      const reason = window.prompt("เหตุผลที่ปฏิเสธคำขอ (ไม่บังคับ)");
+      if (reason === null) return; // กดยกเลิก
+      body = { reason };
+    }
+    setBusyId(id);
+    setError("");
+    try {
+      await staffFetch(`/bookings/${id}/${decision === "APPROVED" ? "approve" : "reject"}`, {
+        method: "PATCH",
+        body,
+      });
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, decision } : r)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "บันทึกการพิจารณาไม่สำเร็จ");
+      loadRequests(); // อาจมีคนอื่นพิจารณาไปก่อนแล้ว โหลดรายการใหม่
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const urgentCount = pending.filter((r) => r.flag === "URGENT").length;
 
@@ -539,6 +512,10 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
             <span>เรียงตามลำดับความเร่งด่วนและกำหนดการ</span>
           </div>
 
+          {error && requests.length > 0 && (
+            <div className="staff-empty">{error}</div>
+          )}
+
           <div className="staff-table-scroll">
             <table className="staff-table">
               <thead>
@@ -607,6 +584,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
                     <td className="staff-actions">
                       <button
                         className="staff-btn-approve"
+                        disabled={busyId === r.id}
                         onClick={() => decide(r.id, "APPROVED")}
                       >
                         อนุมัติคำขอ
@@ -614,6 +592,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
                       <button
                         className="staff-btn-reject"
                         aria-label="ปฏิเสธคำขอ"
+                        disabled={busyId === r.id}
                         onClick={() => decide(r.id, "REJECTED")}
                       >
                         ✕
@@ -624,7 +603,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
                 {visible.length === 0 && (
                   <tr>
                     <td colSpan={7} className="staff-empty">
-                      ไม่มีคำขอที่รออนุมัติ
+                      {loading ? "กำลังโหลดคำขอ..." : error || "ไม่มีคำขอที่รออนุมัติ"}
                     </td>
                   </tr>
                 )}

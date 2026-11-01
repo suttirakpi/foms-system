@@ -7,6 +7,8 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const pricingRoutes = require("./routes/pricingRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
+const staffBookingRoutes = require("./routes/staffBookingRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
 const { AppError } = require("./utils/pricing");
 
 const app = express();
@@ -37,6 +39,8 @@ app.use("/api", bookingRoutes);
 app.use("/api", paymentRoutes);
 app.use("/api", pricingRoutes);
 app.use("/api", scheduleRoutes);
+app.use("/api/staff", staffBookingRoutes);
+app.use("/api/staff", inventoryRoutes);
 
 // Health Check Routes
 app.get("/", (req, res) => {
