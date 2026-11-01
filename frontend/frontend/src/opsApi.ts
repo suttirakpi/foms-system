@@ -71,19 +71,6 @@ export interface OpsVendor {
   note: string;
 }
 
-export interface OpsEnvelope {
-  id: string;
-  date: string;
-  donorName: string;
-  amount: number;
-  note: string;
-  recordedByName: string;
-  createdAt: string;
-  voided: boolean;
-  voidReason: string;
-  voidedByName: string;
-}
-
 export interface OpsBoard {
   job: OpsJob;
   date: string;
@@ -92,16 +79,14 @@ export interface OpsBoard {
   live: boolean;
   steps: OpsStep[];
   vendors: OpsVendor[];
-  ledger: { items: OpsEnvelope[]; total: number; count: number; voidedCount: number };
   scheduleItems: { id: string; time: string; type: string; title: string }[];
 }
 
 export interface OpsSummary {
   job: OpsJob;
-  nights: { date: string; kind: "CHANT" | "CREMATION"; stepsTotal: number; stepsDone: number; envelopeTotal: number }[];
+  nights: { date: string; kind: "CHANT" | "CREMATION"; stepsTotal: number; stepsDone: number }[];
   steps: { total: number; done: number };
   vendors: { total: number; received: number };
-  ledger: { total: number; count: number; voidedCount: number };
   assignments: number;
   canStart: boolean;
   canComplete: boolean;
@@ -125,7 +110,6 @@ export interface ScheduleList {
   items: { _id: string; date: string; time?: string; type: string; title: string; persons: { name: string; role: string }[] }[];
 }
 
-export const baht = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
 export const pad = (n: number) => String(n).padStart(2, "0");
 
 const TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];

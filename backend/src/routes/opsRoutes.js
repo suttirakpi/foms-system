@@ -16,9 +16,6 @@ router.post("/bookings/:id/vendors", ...ops, ctrl.addVendor);
 router.post("/bookings/:id/vendors/seed", ...ops, ctrl.seedVendors);
 router.patch("/vendors/:id", ...ops, ctrl.updateVendor);
 
-router.post("/bookings/:id/ledger", ...ops, ctrl.addEnvelope);
-router.patch("/ledger/:id/void", ...ops, ctrl.voidEnvelope);
-
 router.get("/bookings/:id/assignments", ...ops, ctrl.assignments);
 router.post("/bookings/:id/assignments", ...ops, ctrl.assign);
 router.delete("/assignments/:id", ...ops, ctrl.unassign);
