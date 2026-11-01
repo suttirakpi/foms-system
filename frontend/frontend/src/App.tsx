@@ -36,16 +36,19 @@ type View =
   | "staffHistory";
 
 // ย้าย Helper functions ออกมาไว้นอก App() เพื่อความเป็นระเบียบ
+// backend ส่ง role เป็นตัวพิมพ์ใหญ่ (ADMIN | STAFF | OPS | HOST) จึงเทียบแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
+const roleKey = (role?: string) => (role || "").toLowerCase();
+const isAdminRole = (role?: string) => roleKey(role) === "admin";
 const isOrganizerRole = (role?: string) =>
-  role === "organizer" || role === "operations";
+  ["ops", "organizer", "operations"].includes(roleKey(role));
+const isStaffRole = (role?: string) => roleKey(role) === "staff";
 
-// อัปเดตให้เช็ค role "STAFF" เพื่อพุ่งไปหน้า staff ได้ถูกต้อง
 const homeViewFor = (role?: string): View =>
-  role === "admin"
+  isAdminRole(role)
     ? "admin"
     : isOrganizerRole(role)
       ? "organizer"
-      : role === "STAFF"
+      : isStaffRole(role)
         ? "staff"
         : "landing";
 
@@ -104,9 +107,9 @@ export function App() {
   };
 
   const isLoggedIn = Boolean(currentUser);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
   const isOrganizer = isOrganizerRole(currentUser?.role);
-  const isStaff = currentUser?.role === "STAFF"; // เช็คสถานะว่าเป็นพนักงานวัดหรือไม่
+  const isStaff = isStaffRole(currentUser?.role); // เช็คสถานะว่าเป็นพนักงานวัดหรือไม่
 
   // เพิ่มการแสดงผล Label (เจ้าหน้าที่วัด)
   const roleLabel = isAdmin
