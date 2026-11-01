@@ -123,8 +123,19 @@ async function decide(req, res, next, update, afterUpdate) {
 }
 
 // PATCH /api/staff/bookings/:id/approve  (PENDING -> CONFIRMED)
+// อนุมัติแล้วสร้างกำหนดการพิธีให้อัตโนมัติ (ใช้ตัวสร้างของ scheduleController ตามกฎวัด) เจ้าภาพและบัตรเชิญจะมีกำหนดการทันที
+// ถ้าสร้างไม่สำเร็จ ไม่ทำให้การอนุมัติล้ม (ทีมจัดงานกด "สร้างกำหนดการอัตโนมัติ" ซ้ำได้ภายหลัง)
+async function generateScheduleFor(req, booking) {
+  try {
+    const { generate } = require("./scheduleController");
+    const sink = { status() { return sink; }, json() {} };
+    await generate({ params: { id: String(booking._id) }, user: req.user }, sink);
+  } catch (err) {
+    console.error("[approve] สร้างกำหนดการอัตโนมัติไม่สำเร็จ:", err.message);
+  }
+}
 exports.approve = (req, res, next) =>
-  decide(req, res, next, { status: "CONFIRMED", $unset: { rejectReason: "" } });
+  decide(req, res, next, { status: "CONFIRMED", $unset: { rejectReason: "" } }, (booking) => generateScheduleFor(req, booking));
 
 // PATCH /api/staff/bookings/:id/reject  body: { reason? }  (PENDING -> CANCELLED + คืนคิวศาลา)
 exports.reject = (req, res, next) => {

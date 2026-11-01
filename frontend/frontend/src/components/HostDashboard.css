@@ -606,3 +606,44 @@
     margin-bottom: 0;
   }
 }
+
+/* ===== ชำระเงินจริง / ลิงก์บัตรเชิญ / กำหนดการจริง ===== */
+.pay-box { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.pay-note { padding: 14px; background: #f6f3ea; border: 1px solid #e0d8c0; font-size: 13px; line-height: 1.6; }
+.pay-msg { padding: 10px 12px; background: #e3f1e3; border: 1px solid #a9cfa9; color: #2d6a2d; font-size: 13px; }
+.pay-msg.err { background: #f7dcdc; border-color: #e0a5a5; color: #8a2a2a; }
+.pay-bank { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: #f6f3ea; font-size: 13px; }
+.pay-plans { display: flex; flex-direction: column; gap: 10px; }
+.pay-plan { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #d6d3ca; cursor: pointer; background: #fff; }
+.pay-plan.on { border-color: #111; background: #faf9f6; }
+.pay-plan b { display: block; }
+.pay-plan em { font-style: normal; font-size: 12px; color: #555; }
+.pay-status { font-size: 13px; }
+.pay-row { border: 1px solid #d6d3ca; padding: 12px; background: #fff; }
+.pay-row.approved { background: #f1f8f1; border-color: #a9cfa9; }
+.pay-row.rejected { background: #fdf3f3; border-color: #e0a5a5; }
+.pay-row-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.pay-row-head b { display: block; font-size: 14px; }
+.pay-row-head em { font-style: normal; font-size: 18px; font-weight: 700; }
+.pay-badge { font-size: 11px; padding: 3px 8px; border: 1px solid #d6d3ca; background: #f4f4f4; white-space: nowrap; }
+.pay-badge.pending { background: #fbf1d6; border-color: #b99a52; color: #5a4310; }
+.pay-badge.approved { background: #e3f1e3; border-color: #a9cfa9; color: #2d6a2d; }
+.pay-badge.rejected { background: #f7dcdc; border-color: #e0a5a5; color: #8a2a2a; }
+.pay-reason { margin-top: 8px; font-size: 12px; color: #8a2a2a; }
+.pay-hint { margin-top: 8px; font-size: 12px; color: #666; }
+.pay-upload { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 12px; }
+.pay-upload label { display: flex; flex-direction: column; gap: 3px; }
+.pay-upload input[type="number"] { padding: 7px 9px; border: 1px solid #d6d3ca; }
+.share-box { margin-top: 12px; padding: 12px; background: #f6f3ea; border: 1px solid #e0d8c0; font-size: 12px; display: flex; flex-direction: column; gap: 8px; }
+.share-box code { display: block; padding: 8px; background: #fff; border: 1px solid #d6d3ca; word-break: break-all; font-size: 12px; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.share-actions button, .share-actions a { padding: 7px 12px; border: 1px solid #111; background: #fff; font-size: 12px; cursor: pointer; text-decoration: none; color: #111; }
+.share-actions .solid { background: #111; color: #fff; }
+.real-sched .rs-day { margin-bottom: 14px; }
+.real-sched .rs-day h4 { margin: 0 0 6px; font-size: 14px; }
+.real-sched .rs-row { display: grid; grid-template-columns: 80px 1fr; gap: 10px; padding: 5px 0; border-top: 1px solid #ece8dc; font-size: 13px; }
+.real-sched .rs-row b { font-weight: 600; }
+.real-sched .rs-row em { display: block; font-style: normal; font-size: 11px; color: #777; }
+.sched-note { margin: 8px 0 0; font-size: 12px; color: #777; }
+.booking-picker { margin: 8px 0 0; font-size: 13px; }
+.booking-picker select { margin-left: 8px; padding: 6px 8px; border: 1px solid #d6d3ca; }

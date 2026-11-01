@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StaffNav } from "./StaffNav";
+import { StaffPaymentReview } from "./StaffPaymentReview";
 import { AuthUser } from "../App";
 import { StaffBooking, staffFetch, thaiDateTime, thaiRange } from "../staffApi";
 import "./TempleStaffApprovals.css";
@@ -98,6 +99,15 @@ const GUIDELINES = [
 
 const baht =(n: number) => `฿${n.toLocaleString("th-TH")}`;
 
+interface StaffSummary {
+  pending: number;
+  urgent: number;
+  pendingSlips: number;
+  halls: { total: number; freeToday: number; freeNames: string[] };
+  tonight: { jobs: number; persons: number };
+  generatedAt: string;
+}
+
 interface ExtraFilters {
   doc: string;
   flag: string;
@@ -156,6 +166,15 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [summary, setSummary] = useState<StaffSummary | null>(null);
+
+  const loadSummary = async () => {
+    try {
+      setSummary(await staffFetch<StaffSummary>("/summary"));
+    } catch {
+      /* การ์ดสถิติเป็นข้อมูลประกอบ ถ้าโหลดไม่ได้ก็แสดงขีดไว้ */
+    }
+  };
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
 
@@ -189,6 +208,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
 
   useEffect(() => {
     loadRequests();
+    loadSummary();
   }, []);
 
   const extraCount = Object.values(extra).filter((v) => v !== "ALL").length;
@@ -242,6 +262,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
         body,
       });
       setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, decision } : r)));
+      loadSummary();
     } catch (err) {
       setError(err instanceof Error ? err.message : "บันทึกการพิจารณาไม่สำเร็จ");
       loadRequests(); // อาจมีคนอื่นพิจารณาไปก่อนแล้ว โหลดรายการใหม่
@@ -280,7 +301,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
             คำขอจองศาลาและพิธีการรออนุมัติ (Pending Approvals)
           </h1>
           <span className="staff-updated">
-            อัปเดตล่าสุด: 12 ก.ค. 2569 · 12:05 น.
+            อัปเดตล่าสุด: {summary ? thaiDateTime(summary.generatedAt) : "กำลังโหลด..."}
           </span>
         </div>
         <p className="staff-subtitle">
@@ -303,24 +324,26 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
           <div className="staff-stat">
             <span className="staff-stat-label">02 · ศาลาว่างวันนี้</span>
             <div className="staff-stat-value">
-              2 / 3 <small>หลัง</small>
-            </div>
-            <div className="staff-stat-note">ศาลา 1 ว่าง, ศาลา 3 ว่าง</div>
-          </div>
-          <div className="staff-stat">
-            <span className="staff-stat-label">03 · ยืนยันคิวพระสงฆ์แล้ว</span>
-            <div className="staff-stat-value">
-              12 <small>รูป / 3 งาน</small>
-            </div>
-            <div className="staff-stat-note">คิวสวดพระอภิธรรมประจำคืนนี้</div>
-          </div>
-          <div className="staff-stat">
-            <span className="staff-stat-label">04 · งานพิธีสวดคืนนี้</span>
-            <div className="staff-stat-value">
-              1 <small>งาน</small>
+              {summary ? `${summary.halls.freeToday} / ${summary.halls.total}` : "—"} <small>หลัง</small>
             </div>
             <div className="staff-stat-note">
-              ศาลา 2 เมตตาธรรม (สวดคืนที่ 3)
+              {summary ? (summary.halls.freeNames.length ? `${summary.halls.freeNames.join(", ")} ว่าง` : "ไม่มีศาลาว่างวันนี้") : "กำลังโหลด..."}
+            </div>
+          </div>
+          <div className="staff-stat">
+            <span className="staff-stat-label">03 · สลิปโอนเงินรอตรวจ</span>
+            <div className="staff-stat-value">
+              {summary ? summary.pendingSlips : "—"} <small>รายการ</small>
+            </div>
+            <div className="staff-stat-note">ตรวจได้ที่ตารางด้านล่างของหน้านี้</div>
+          </div>
+          <div className="staff-stat">
+            <span className="staff-stat-label">04 · งานพิธีวันนี้</span>
+            <div className="staff-stat-value">
+              {summary ? summary.tonight.jobs : "—"} <small>งาน</small>
+            </div>
+            <div className="staff-stat-note">
+              {summary ? `ทีมจัดงานจัดบุคลากรเข้าพิธีวันนี้แล้ว ${summary.tonight.persons} ท่าน` : "กำลังโหลด..."}
             </div>
           </div>
         </section>
@@ -615,6 +638,8 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
             แสดง {visible.length} จากทั้งหมด {pending.length} รายการ
           </div>
         </section>
+
+        <StaffPaymentReview onChanged={loadSummary} />
 
         <section className="staff-guide">
           <h2 className="staff-guide-title">

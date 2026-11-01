@@ -3,6 +3,8 @@ import { Navbar } from "./Navbar";
 import { AuthUser } from "../App";
 import "./HostDashboard.css";
 import { API_URL } from "../config";
+import { HostPayment } from "./HostPayment";
+import { HostSchedule, HostScheduleItem, errMsg, hostFetch } from "../hostApi";
 
 interface HostDashboardProps {
   isLoggedIn?: boolean;
@@ -37,8 +39,10 @@ interface BookingDetail {
     addonsTotal: number;
     grandTotal: number;
   };
-  status: "PENDING" | "CONFIRMED" | "PAID" | "COMPLETED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "PAID" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  paymentStatus?: "UNPAID" | "SLIP_UPLOADED" | "PARTIAL" | "PAID";
   paymentSlipUrl?: string;
+  shareToken?: string;
   updatedAt: string;
 }
 
@@ -55,26 +59,23 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
 }) => {
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [slipFileName, setSlipFileName] = useState("");
+  const [list, setList] = useState<BookingDetail[]>([]);
+  const [schedule, setSchedule] = useState<HostScheduleItem[]>([]);
+  const [shareToken, setShareToken] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const fetchMyBooking = async () => {
     try {
       setLoading(true);
-      const query = new URLSearchParams();
-      if (currentUser?._id || currentUser?.id) {
-        query.set("hostId", (currentUser._id || currentUser.id) as string);
-      } else if (currentUser?.name) {
-        query.set("hostName", currentUser.name);
-      }
-
-      const res = await fetch(
-        `${API_URL}/api/bookings/my?${query.toString()}`,
-        { credentials: "include" },
-      );
+      // เซิร์ฟเวอร์ใช้ผู้ใช้จาก cookie (JWT) ไม่ต้องส่ง hostId
+      const res = await fetch(`${API_URL}/api/bookings/my`, { credentials: "include" });
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        setBooking(data[0]); // แสดงใบจองล่าสุด
+        setList(data);
+        setBooking(data[0]); // ค่าเริ่มต้น = ใบจองล่าสุด
       } else {
+        setList([]);
         setBooking(null);
       }
     } catch (err) {
@@ -84,9 +85,74 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     }
   };
 
+  // โหลดสถานะงานใหม่แบบเงียบๆ (ไม่กระพริบหน้าจอ) หลังชำระเงิน/ส่งสลิป
+  const refreshBooking = async () => {
+    if (!booking) return;
+    try {
+      const res = await fetch(`${API_URL}/api/bookings/my`, { credentials: "include" });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setList(data);
+        const fresh = data.find((b: BookingDetail) => b._id === booking._id);
+        if (fresh) setBooking(fresh);
+      }
+    } catch {
+      /* ไม่ต้องทำอะไร ค่าเดิมยังแสดงอยู่ */
+    }
+  };
+
   useEffect(() => {
     fetchMyBooking();
   }, [currentUser]);
+
+  // กำหนดการจริงของงาน (เจ้าหน้าที่/ทีมจัดงานสร้างไว้) และลิงก์บัตรเชิญที่เคยสร้าง
+  useEffect(() => {
+    setShareToken(booking?.shareToken || "");
+    setSchedule([]);
+    if (!booking) return;
+    let cancelled = false;
+    hostFetch<HostSchedule>(`/bookings/${booking._id}/schedule`)
+      .then((r) => !cancelled && setSchedule(r.items))
+      .catch(() => !cancelled && setSchedule([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [booking?._id, booking?.status]);
+
+  const createShare = async () => {
+    if (!booking) return;
+    setShareBusy(true);
+    try {
+      const r = await hostFetch<{ token: string }>(`/bookings/${booking._id}/share`, { method: "POST" });
+      setShareToken(r.token);
+    } catch (err) {
+      alert(errMsg(err));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+  const revokeShare = async () => {
+    if (!booking || !window.confirm("ยกเลิกลิงก์บัตรเชิญนี้ใช่หรือไม่? คนที่ได้รับลิงก์เดิมจะเปิดดูไม่ได้อีก")) return;
+    setShareBusy(true);
+    try {
+      await hostFetch(`/bookings/${booking._id}/share`, { method: "DELETE" });
+      setShareToken("");
+    } catch (err) {
+      alert(errMsg(err));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+  const inviteUrl = shareToken ? `${window.location.origin}/#invite/${shareToken}` : "";
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt("คัดลอกลิงก์นี้", inviteUrl);
+    }
+  };
 
   // ฟังก์ชันช่วยแปลงวันที่เป็นภาษาไทย
   const formatThaiDate = (dateStr: string, addDays = 0) => {
@@ -97,30 +163,6 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
       month: "short",
       year: "numeric",
     });
-  };
-
-  // อัปโหลดสลิปโอนเงิน
-  const handleConfirmPayment = async () => {
-    if (!booking) return;
-    if (!slipFileName) {
-      alert("กรุณาเลือกไฟล์สลิปโอนเงินก่อนยืนยัน");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/api/bookings/${booking._id}/slip`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ paymentSlipUrl: slipFileName }),
-      });
-      if (!res.ok) throw new Error("ส่งหลักฐานไม่สำเร็จ");
-      const updated = await res.json();
-      setBooking(updated);
-      alert("✅ ส่งหลักฐานการโอนเงินเรียบร้อยแล้ว สถานะเปลี่ยนเป็น PAID");
-    } catch (err: any) {
-      alert(err.message);
-    }
   };
 
   // ยกเลิกคำขอจอง
@@ -142,8 +184,25 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     }
   };
 
-  const statusOrder = ["PENDING", "CONFIRMED", "PAID", "COMPLETED"];
-  const currentStepIndex = booking ? statusOrder.indexOf(booking.status) : 0;
+  // 0 = รอวัดอนุมัติ, 1 = อนุมัติแล้ว/รอชำระ, 2 = ชำระครบ, 3 = เสร็จสิ้น
+  const currentStepIndex = !booking
+    ? 0
+    : booking.status === "COMPLETED"
+      ? 3
+      : booking.status === "PAID" || booking.paymentStatus === "PAID"
+        ? 2
+        : ["CONFIRMED", "IN_PROGRESS"].includes(booking.status)
+          ? 1
+          : 0;
+
+  // จัดกลุ่มกำหนดการจริงตามวัน
+  const schedDates = [...new Set(schedule.map((i) => i.date))].sort();
+  const SCHED_TYPE: Record<string, string> = { BATHING: "พิธีสรงน้ำศพ", CHANT: "สวดพระอภิธรรม", CREMATION: "พิธีฌาปนกิจ", MERIT: "ทำบุญอุทิศส่วนกุศล" };
+  const ROLE_TH: Record<string, string> = { CHIEF: "พระประธาน", CHANT: "พระสวด", MC: "มัคนายก/พิธีกร" };
+  const thDay = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("th-TH", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
+  };
 
   return (
     <div className="dashboard-wrapper">
@@ -200,6 +259,16 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
               {booking.templeName} — {booking.hallName} · เจ้าภาพ:{" "}
               {booking.hostName}
             </div>
+            {list.length > 1 && (
+              <div className="booking-picker">
+                งานของฉัน ({list.length} งาน)
+                <select value={booking._id} onChange={(e) => setBooking(list.find((b) => b._id === e.target.value) || booking)}>
+                  {list.map((b) => (
+                    <option key={b._id} value={b._id}>{b.bookingRef} · {b.deceasedName} ({b.status})</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="dashboard-container">
@@ -251,7 +320,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                   </div>
                   <div className="step-label">02 CONFIRMED</div>
                   <div className="step-title">อนุมัติแล้ว - รอชำระเงิน</div>
-                  <div className="step-desc">พร้อมเปิดรับสลิปโอนเงิน</div>
+                  <div className="step-desc">เลือกแผนและส่งสลิปโอนเงิน</div>
                 </div>
 
                 <div
@@ -271,8 +340,8 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                     ) : null}
                   </div>
                   <div className="step-label">03 PAID</div>
-                  <div className="step-title">ชำระเงินแล้ว</div>
-                  <div className="step-desc">ส่งหลักฐานโอนเงินเรียบร้อย</div>
+                  <div className="step-title">ชำระเงินครบแล้ว</div>
+                  <div className="step-desc">เจ้าหน้าที่ตรวจสลิปผ่านครบ</div>
                 </div>
 
                 <div
@@ -295,9 +364,13 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                 {booking.status === "PENDING" &&
                   "คำขอจองของท่านอยู่ระหว่างรอเจ้าหน้าที่วัดตรวจสอบและอนุมัติคิวศาลา"}
                 {booking.status === "CONFIRMED" &&
-                  "วัดอนุมัติคำขอแล้ว กรุณาชำระเงินและแนบสลิปเพื่อล็อกคิวคณะสงฆ์"}
+                  "วัดอนุมัติคำขอแล้ว กรุณาเลือกแผนและชำระเงินในกล่องด้านขวา แล้วแนบสลิปให้เจ้าหน้าที่ตรวจสอบ"}
                 {booking.status === "PAID" &&
-                  "ระบบได้รับหลักฐานการชำระเงินของท่านเรียบร้อยแล้ว"}
+                  "ชำระเงินครบถ้วนแล้ว ทีมจัดงานจะดูแลพิธีตามกำหนดการ"}
+                {booking.status === "IN_PROGRESS" &&
+                  "พิธีกำลังดำเนินการ ทีมจัดงานหน้างานกำลังดูแลตามกำหนดการ"}
+                {booking.status === "COMPLETED" &&
+                  "พิธีเสร็จสมบูรณ์แล้ว ขอบคุณที่ไว้วางใจให้เราดูแลพิธี"}
                 {booking.status === "CANCELLED" && "รายการจองนี้ถูกยกเลิกแล้ว"}
               </div>
             </div>
@@ -316,6 +389,28 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                     – {formatThaiDate(booking.startDate, booking.nights)})
                   </h3>
 
+                  {schedule.length > 0 ? (
+                    <div className="real-sched">
+                      {schedDates.map((d) => (
+                        <div key={d} className="rs-day">
+                          <h4>{thDay(d)}</h4>
+                          {schedule.filter((i) => i.date === d).map((i) => (
+                            <div key={i._id} className="rs-row">
+                              <b>{i.time ? `${i.time} น.` : "ตลอดวัน"}</b>
+                              <span>
+                                {i.title}
+                                <em>
+                                  {SCHED_TYPE[i.type] || i.type}
+                                  {i.persons.length > 0 && ` · ${i.persons.map((p) => `${ROLE_TH[p.role] || p.role}: ${p.name}`).join(", ")}`}
+                                </em>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
                   <div className="timeline-container">
                     <div className="timeline-item active">
                       <div className="timeline-dot" />
@@ -377,6 +472,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                       </div>
                     </div>
                   </div>
+                  <p className="sched-note">กำหนดการเบื้องต้นตามแพ็กเกจ เจ้าหน้าที่วัดจะยืนยันกำหนดการจริงให้หลังอนุมัติ</p>
+                    </>
+                  )}
                 </div>
 
                 <div className="dashboard-card">
@@ -411,6 +509,27 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                       สร้างจากข้อมูลจริงในฐานข้อมูลอัตโนมัติ
                     </div>
                   </div>
+
+                  {booking.status !== "CANCELLED" && (
+                    <div className="share-box">
+                      <b>ส่งบัตรเชิญให้ญาติและแขกผ่านลิงก์</b>
+                      {!shareToken ? (
+                        <button className="btn-solid-black" disabled={shareBusy} onClick={createShare}>
+                          {shareBusy ? "กำลังสร้าง..." : "สร้างลิงก์บัตรเชิญ"}
+                        </button>
+                      ) : (
+                        <>
+                          <code>{inviteUrl}</code>
+                          <div className="share-actions">
+                            <button className="solid" onClick={copyInvite}>{copied ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}</button>
+                            <a href={inviteUrl} target="_blank" rel="noreferrer">เปิดดูบัตรเชิญ</a>
+                            <button onClick={revokeShare} disabled={shareBusy}>ยกเลิกลิงก์</button>
+                          </div>
+                          <span>ผู้ที่มีลิงก์ดูได้เฉพาะชื่อ วัน สถานที่ และกำหนดการ ไม่เห็นราคาหรือข้อมูลส่วนตัว</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -454,45 +573,12 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                     </span>
                   </div>
 
-                  <div className="deposit-box">
-                    <div>
-                      <div className="deposit-label">
-                        ยอดชำระมัดจำงวดแรก (50%)
-                      </div>
-                      <div className="deposit-desc">
-                        หรือเลือกชำระเต็มจำนวน ฿
-                        {booking.pricing.grandTotal.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="deposit-amount">
-                      ฿{(booking.pricing.grandTotal / 2).toLocaleString()}
-                    </div>
-                  </div>
-
-                  <div className="upload-label">
-                    แนบหลักฐานการโอนเงิน (Payment Slip)
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) =>
-                      setSlipFileName(e.target.files?.[0]?.name || "")
-                    }
-                    style={{ marginBottom: "1rem", fontSize: "12px" }}
+                  <HostPayment
+                    bookingId={booking._id}
+                    status={booking.status}
+                    grandTotal={booking.pricing.grandTotal}
+                    onChanged={refreshBooking}
                   />
-
-                  <button
-                    className="btn-solid-black"
-                    onClick={handleConfirmPayment}
-                    disabled={
-                      booking.status === "PAID" ||
-                      booking.status === "CANCELLED"
-                    }
-                  >
-                    {booking.status === "PAID"
-                      ? "✓ ชำระเงินเรียบร้อยแล้ว"
-                      : "✓ ยืนยันการส่งหลักฐานชำระเงิน"}
-                  </button>
 
                   {booking.status === "PENDING" && (
                     <span className="cancel-link" onClick={handleCancelBooking}>

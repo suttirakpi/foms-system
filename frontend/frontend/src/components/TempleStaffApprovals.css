@@ -509,3 +509,13 @@
   background: var(--white);
   color: var(--black);
 }
+
+/* ===== แผงตรวจสลิปโอนเงิน ===== */
+.slip-notice { margin: 0 20px 12px; padding: 10px 14px; background: #f6f3ea; border: 1px solid #e0d8c0; font-size: 13px; }
+.staff-btn-outline-sm { padding: 8px 12px; background: #fff; border: 1px solid #111; font-size: 12px; cursor: pointer; font-family: inherit; }
+.staff-btn-outline-sm:disabled, .staff-btn-approve:disabled, .staff-btn-reject:disabled { opacity: .45; cursor: not-allowed; }
+.slip-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .55); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; overflow-y: auto; }
+.slip-modal-box { background: #fff; max-width: 520px; width: 100%; padding: 16px; }
+.slip-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.slip-modal-head button { background: none; border: 0; font-size: 18px; cursor: pointer; }
+.slip-modal-box img { width: 100%; height: auto; display: block; border: 1px solid #ddd; }

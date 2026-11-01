@@ -8,6 +8,7 @@ import { Booking } from "./components/Booking";
 import { HostDashboard } from "./components/HostDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { OrganizerBoard } from "./components/OrganizerBoard";
+import { InvitePage } from "./components/InvitePage";
 import { TempleStaffApprovals } from "./components/TempleStaffApprovals";
 import { TempleStaffCalendar } from "./components/TempleStaffCalendar";
 import { TempleStaffInventory } from "./components/TempleStaffInventory";
@@ -33,7 +34,8 @@ type View =
   | "staff"
   | "staffCalendar"
   | "staffInventory"
-  | "staffHistory";
+  | "staffHistory"
+  | "invite";
 
 // ย้าย Helper functions ออกมาไว้นอก App() เพื่อความเป็นระเบียบ
 // backend ส่ง role เป็นตัวพิมพ์ใหญ่ (ADMIN | STAFF | OPS | HOST) จึงเทียบแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
@@ -52,10 +54,18 @@ const homeViewFor = (role?: string): View =>
         ? "staff"
         : "landing";
 
+const inviteTokenFromHash = () => {
+  const m = window.location.hash.match(/^#invite\/([A-Za-z0-9_-]{16,64})$/);
+  return m ? m[1] : "";
+};
+
 export function App() {
   // รวม State ทั้งหมดไว้ที่จุดเดียว
+  const [inviteToken] = useState(inviteTokenFromHash);
   const [currentView, setCurrentView] = useState<View>(
-    import.meta.env.DEV && window.location.hash === "#staff"
+    inviteToken
+      ? "invite"
+      : import.meta.env.DEV && window.location.hash === "#staff"
       ? "staff"
       : import.meta.env.DEV && window.location.hash === "#calendar"
         ? "staffCalendar"
@@ -70,7 +80,7 @@ export function App() {
   // ดึงสถานะผู้ใช้ที่เคยล็อกอินไว้เมื่อเปิดหน้าเว็บ
   useEffect(() => {
     const savedUser = localStorage.getItem("foms_user");
-    if (savedUser) {
+    if (savedUser && !inviteToken) {
       try {
         const user = JSON.parse(savedUser) as AuthUser;
         setCurrentUser(user);
@@ -123,6 +133,18 @@ export function App() {
   const displayUserName = currentUser
     ? `${currentUser.name} (${roleLabel})`
     : "";
+
+  if (currentView === "invite" && inviteToken) {
+    return (
+      <InvitePage
+        token={inviteToken}
+        onNavigateHome={() => {
+          window.location.hash = "";
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="app-container">

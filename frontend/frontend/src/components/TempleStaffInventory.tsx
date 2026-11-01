@@ -116,6 +116,20 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
     });
   }, [items, search, category, status]);
 
+  // ตัวเลขบนการ์ดสรุป คำนวณจากรายการจริงในคลังของวัด
+  const stats = useMemo(() => {
+    const totalUnits = items.reduce((n, i) => n + i.total, 0);
+    const readyUnits = items.reduce((n, i) => n + i.ready, 0);
+    const inUse = items.filter((i) => i.status === "IN_USE" || i.status === "PARTIAL");
+    const low = items.filter((i) => i.status === "LOW");
+    return {
+      totalUnits,
+      readyPct: totalUnits ? Math.round((readyUnits / totalUnits) * 1000) / 10 : 0,
+      inUse,
+      low,
+    };
+  }, [items]);
+
   const filtering = search.trim() !== "" || category !== "ALL" || status !== "ALL";
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -240,12 +254,12 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
             </div>
             <h3>จำนวนรายการอุปกรณ์ทั้งหมด</h3>
             <div className="inv-stat-value">
-              38 <small>หมวดรายการ</small>
+              {items.length} <small>หมวดรายการ</small>
             </div>
-            <p>รวมทั้งสิ้น 3,420 ชิ้น/ชุด ในคลังศาสนสมบัติส่วนกลาง</p>
+            <p>รวมทั้งสิ้น {num(stats.totalUnits)} ชิ้น/ชุด ในคลังของวัด</p>
             <div className="inv-stat-foot">
               <span>อัตราพร้อมให้บริการ</span>
-              <em>พร้อมใช้งาน 94.2%</em>
+              <em>พร้อมใช้งาน {stats.readyPct}%</em>
             </div>
           </div>
           <div className="inv-stat">
@@ -255,12 +269,12 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
             </div>
             <h3>กำลังใช้งานในพิธีการ</h3>
             <div className="inv-stat-value">
-              12 <small>รายการหลัก</small>
+              {stats.inUse.length} <small>รายการหลัก</small>
             </div>
-            <p>จัดสรรให้ ศาลา 1, ศาลา 2, ศาลา 3 และเมรุหลวง ประจำคืนนี้</p>
+            <p>{stats.inUse.length ? stats.inUse.slice(0, 3).map((i) => i.usingNote || i.name).join(", ") : "ยังไม่มีรายการที่กำลังใช้งานในพิธี"}</p>
             <div className="inv-stat-foot">
-              <span>กำหนดการส่งมอบกลับ</span>
-              <em>รอบส่งคืนถัดไป: 21:30 น.</em>
+              <span>ใช้งานอยู่ตอนนี้</span>
+              <em>{num(stats.inUse.reduce((n, i) => n + (i.total - i.ready), 0))} ชิ้น/ชุด</em>
             </div>
           </div>
           <div className="inv-stat danger">
@@ -270,12 +284,12 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
             </div>
             <h3>แจ้งเตือนสต็อกใกล้หมด</h3>
             <div className="inv-stat-value">
-              3 <small>รายการขาดแคลน</small>
+              {stats.low.length} <small>รายการขาดแคลน</small>
             </div>
-            <p>ดอกไม้จันทน์ (450 ดอก), ผ้าบังสุกุลพรีเมียม (8 ชุด), น้ำอบไทย (12 ขวด)</p>
+            <p>{stats.low.length ? stats.low.slice(0, 4).map((i) => `${i.name} (${i.ready} ${i.unit})`).join(", ") : "ไม่มีรายการที่สต็อกต่ำ"}</p>
             <div className="inv-stat-foot">
               <span>ต้องจัดซื้อ / สั่งผลิตเพิ่ม</span>
-              <em className="urgent">ด่วนพิเศษ</em>
+              <em className={stats.low.length ? "urgent" : ""}>{stats.low.length ? "ด่วนพิเศษ" : "ปกติ"}</em>
             </div>
           </div>
         </section>

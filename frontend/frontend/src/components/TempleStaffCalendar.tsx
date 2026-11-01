@@ -324,6 +324,18 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
     const to = toISO(month.y, month.m, daysInMonth);
     return e.start <= to && e.end >= from;
   });
+  // สรุปประจำเดือน คำนวณจากงานจริง: นับจำนวนคืนที่ใช้ศาลาในเดือนนี้ ศาลาที่ใช้หนาแน่นสุด และจำนวนพิธีฌาปนกิจ
+  const monthFrom = toISO(month.y, month.m, 1);
+  const monthTo = toISO(month.y, month.m, daysInMonth);
+  const hallNights = new Map<string, number>();
+  monthEvents.forEach((e) => {
+    for (let d = e.start; d <= e.end; d = new Date(Date.parse(d) + 86400000).toISOString().slice(0, 10)) {
+      if (d >= monthFrom && d <= monthTo) hallNights.set(e.hall, (hallNights.get(e.hall) || 0) + 1);
+    }
+  });
+  const nightsUsed = [...hallNights.values()].reduce((n, v) => n + v, 0);
+  const busiest = [...hallNights.entries()].sort((a, b) => b[1] - a[1])[0];
+  const cremationsInMonth = monthEvents.filter((e) => e.cremationISO && e.cremationISO >= monthFrom && e.cremationISO <= monthTo).length;
   const dotCount = cells.filter(
     (d) => d !== null && dayInfo(d).list.length > 0,
   ).length;
@@ -575,21 +587,20 @@ export const TempleStaffCalendar: React.FC<TempleStaffCalendarProps> = ({
                 <dd>{thDigits(monthEvents.length)} งานพิธี</dd>
               </div>
               <div>
-                <dt>กิจนิมนต์พระสงฆ์สะสม</dt>
-                <dd>72 กิจ / รูป-วาระ</dd>
+                <dt>จำนวนคืนที่ใช้ศาลาทั้งเดือน</dt>
+                <dd>{thDigits(nightsUsed)} คืน</dd>
               </div>
               <div>
                 <dt>ศาลาที่ใช้งานหนาแน่นสุด</dt>
-                <dd className="gold">ศาลา 2 เมตตาธรรม (88%)</dd>
+                <dd className="gold">{busiest ? `${busiest[0]} (${thDigits(busiest[1])} คืน)` : "ยังไม่มีงานในเดือนนี้"}</dd>
               </div>
               <div>
-                <dt>อัตราการใช้งานเตาเผาเมรุหลวง</dt>
-                <dd>12 พิธีประชุมเพลิง</dd>
+                <dt>พิธีฌาปนกิจในเดือนนี้</dt>
+                <dd>{thDigits(cremationsInMonth)} พิธี</dd>
               </div>
             </dl>
             <p className="cal-note">
-              <strong>คำแนะนำวัด:</strong> วันพระที่จะถึง (22 ก.ค.)
-              เมรุหลวงงดพิธีฌาปนกิจตามประเพณี ให้จัดสรรพระสงฆ์เฉพาะสวดพระอภิธรรม
+              <strong>หมายเหตุ:</strong> ตัวเลขสรุปคำนวณจากงานจองที่วัดอนุมัติและยังไม่ยกเลิก ตามเดือนที่เปิดอยู่
             </p>
           </div>
         </aside>
