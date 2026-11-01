@@ -1,0 +1,26 @@
+stateDiagram-v2
+direction LR
+
+state "UNPAID<br/>ยังไม่ชำระ" as UNPAID
+state "SLIP_UPLOADED<br/>ส่งสลิปแล้ว รอตรวจ" as SLIP_UPLOADED
+state "PARTIAL<br/>ชำระบางส่วน" as PARTIAL
+state "PAID<br/>ชำระครบ" as PAID
+
+[*] --> UNPAID : สร้างงานจอง
+UNPAID --> SLIP_UPLOADED : มีงวดที่รอตรวจ (PENDING)
+SLIP_UPLOADED --> UNPAID : สลิปถูกปฏิเสธ<br/>และไม่มีงวดที่รอตรวจหรือผ่านแล้ว
+SLIP_UPLOADED --> PARTIAL : อนุมัติบางงวด (ยอดที่ผ่าน > 0)
+SLIP_UPLOADED --> PAID : ยอดที่ผ่านรวม ≥ ยอดสุทธิ
+PARTIAL --> PAID : ยอดที่ผ่านรวม ≥ ยอดสุทธิ
+PAID --> [*]
+
+note right of PAID
+  ถ้าสถานะงานเป็น CONFIRMED
+  จะขยับเป็น PAID ตามไปด้วย
+end note
+note left of PARTIAL
+  คำนวณใหม่ทุกครั้งที่มีการส่งสลิป
+  หรือเจ้าหน้าที่ตรวจสลิป
+  (ยอดที่ผ่านมากกว่า 0 = PARTIAL
+  แม้ยังมีงวดอื่นรอตรวจอยู่)
+end note

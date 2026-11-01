@@ -1,0 +1,30 @@
+stateDiagram-v2
+direction LR
+
+state "PENDING<br/>รอวัดอนุมัติ" as PENDING
+state "CONFIRMED<br/>อนุมัติแล้ว รอชำระเงิน" as CONFIRMED
+state "PAID<br/>ชำระครบทุกงวดแล้ว" as PAID
+state "IN_PROGRESS<br/>กำลังดำเนินพิธี" as IN_PROGRESS
+state "COMPLETED<br/>พิธีเสร็จสิ้น" as COMPLETED
+state "CANCELLED<br/>ยกเลิก / ถูกปฏิเสธ" as CANCELLED
+
+[*] --> PENDING : เจ้าภาพส่งคำขอจอง<br/>(ล็อกศาลาทีละคืน)
+PENDING --> CONFIRMED : เจ้าหน้าที่วัดอนุมัติ<br/>(สร้างกำหนดการอัตโนมัติ)
+PENDING --> CANCELLED : เจ้าหน้าที่ปฏิเสธ (ใส่เหตุผล)<br/>หรือเจ้าภาพยกเลิก<br/>(คืนคิวศาลา)
+CONFIRMED --> CANCELLED : เจ้าภาพยกเลิก<br/>(คืนคิวศาลา)
+CONFIRMED --> PAID : เจ้าหน้าที่อนุมัติสลิปครบทุกงวด
+CONFIRMED --> IN_PROGRESS : ทีมจัดงานติ๊กขั้นตอนแรก
+PAID --> IN_PROGRESS : ทีมจัดงานติ๊กขั้นตอนแรก
+IN_PROGRESS --> COMPLETED : ทีมจัดงาน/เจ้าหน้าที่ปิดงาน<br/>(เตือนถ้ายังมีของไม่ตรวจรับ)
+COMPLETED --> [*]
+CANCELLED --> [*]
+
+note right of IN_PROGRESS
+  ถ้าชำระเงินครบหลังเริ่มพิธีแล้ว
+  paymentStatus เป็น PAID
+  แต่สถานะงานยังเป็น IN_PROGRESS
+end note
+note right of CANCELLED
+  เจ้าภาพยกเลิกได้เฉพาะ
+  PENDING และ CONFIRMED
+end note

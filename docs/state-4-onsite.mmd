@@ -1,0 +1,39 @@
+stateDiagram-v2
+direction LR
+
+state "งานหน้างานของแต่ละคืน (ทีมจัดงาน)" as Night
+state "ขั้นตอนพิธี (RunStep)" as StepLife
+state "การตรวจรับของคู่ค้า (VendorDelivery)" as VendorLife
+state "ซองทำบุญ (MeritEnvelope)" as EnvLife
+
+state "wait<br/>รอคิว" as S_wait
+state "active<br/>กำลังดำเนินการ" as S_active
+state "done<br/>เสร็จแล้ว (บันทึกผู้ติ๊ก+เวลา)" as S_done
+state "SHIPPING<br/>กำลังจัดส่ง" as V_ship
+state "ARRIVED<br/>ของถึงลานจอดแล้ว" as V_arr
+state "RECEIVED<br/>ตรวจรับแล้ว (มีเลขใบตรวจรับ+ผู้ตรวจ)" as V_rec
+state "RECORDED<br/>บันทึกแล้ว (แก้จำนวนเงินไม่ได้)" as E_rec
+state "VOIDED<br/>ยกเลิก (เก็บหลักฐาน+เหตุผล)" as E_void
+
+state Night {
+  state StepLife {
+    [*] --> S_wait : กด "เริ่มงานวันนี้"<br/>สร้างขั้นตอนจากแม่แบบ
+    S_wait --> S_active : ขั้นแรกทันทีที่สร้าง<br/>ขั้นถัดไปเมื่อขั้นก่อนหน้าเสร็จ
+    S_active --> S_done : ติ๊กเสร็จ<br/>(ติ๊กซ้ำหรือข้ามคิวไม่ได้)
+    S_done --> [*]
+  }
+  --
+  state VendorLife {
+    [*] --> V_ship : เพิ่มรายการ หรือสร้างจากตัวเลือกที่เจ้าภาพเลือก
+    V_ship --> V_arr : แจ้งของถึง
+    V_arr --> V_rec : ตรวจรับและลงนาม
+    V_ship --> V_rec : ตรวจรับทันที
+    V_rec --> [*]
+  }
+  --
+  state EnvLife {
+    [*] --> E_rec : บันทึกซอง (งานต้องยังไม่ปิด)
+    E_rec --> E_void : ยกเลิกซอง (ต้องระบุเหตุผล)
+    E_void --> [*]
+  }
+}

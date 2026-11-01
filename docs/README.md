@@ -18,3 +18,24 @@
 
 > กล่องที่ติดป้าย "ยังไม่ได้ใช้ / ยังไม่เปิดใช้" มี model ในโค้ดแต่ยังไม่มีหน้าจอเรียกใช้ (StepLog, Staff, DutyAssignment)
 > เส้นความสัมพันธ์เป็นการอ้างอิงด้วย ObjectId (MongoDB ไม่มี foreign key จริง)
+
+---
+
+# State Chart (แผนภาพสถานะ) ของระบบ
+
+เขียนจากเงื่อนไขการเปลี่ยนสถานะจริงใน controller (ต้นฉบับ Mermaid ไฟล์ `state-*.mmd`)
+
+### 1) สถานะงานจอง (Booking.status)
+![สถานะงานจอง](state-1-booking.png)
+
+### 2) งวดชำระเงิน (Payment.status)
+![งวดชำระเงิน](state-2-payment.png)
+
+### 3) สถานะการชำระของงาน (Booking.paymentStatus)
+![สถานะการชำระ](state-3-payment-status.png)
+
+### 4) งานหน้างาน: ขั้นตอนพิธี / ตรวจรับของ / ซองทำบุญ
+![งานหน้างาน](state-4-onsite.png)
+
+### 5) เปิด-ปิดข้อมูลโดยแอดมิน และลิงก์บัตรเชิญ
+![เปิดปิดข้อมูล](state-5-admin-and-invite.png)

@@ -1,0 +1,23 @@
+stateDiagram-v2
+direction LR
+
+state "UNPAID<br/>รอชำระ" as UNPAID
+state "PENDING<br/>ส่งสลิปแล้ว รอตรวจ" as PENDING
+state "APPROVED<br/>ตรวจผ่าน" as APPROVED
+state "REJECTED<br/>สลิปไม่ผ่าน" as REJECTED
+
+[*] --> UNPAID : เจ้าภาพเลือกแผนชำระ<br/>(เต็มจำนวน 1 งวด / แบ่ง 2 งวด มัดจำ 30%)
+UNPAID --> PENDING : เจ้าภาพอัปโหลดสลิป (JPG/PNG ไม่เกิน 5MB)<br/>ระบบตรวจสลิปซ้ำจากค่าแฮช
+PENDING --> APPROVED : เจ้าหน้าที่วัดกด "ผ่าน"
+PENDING --> REJECTED : เจ้าหน้าที่กด "ไม่ผ่าน"<br/>(ต้องระบุเหตุผล)
+REJECTED --> PENDING : เจ้าภาพส่งสลิปใหม่
+APPROVED --> [*]
+
+note right of UNPAID
+  งวดที่ 2 ส่งสลิปได้ต่อเมื่อ
+  งวดที่ 1 เป็น APPROVED แล้ว
+end note
+note right of PENDING
+  เปลี่ยนแผนชำระไม่ได้อีก
+  เมื่อมีงวดที่เป็น PENDING หรือ APPROVED
+end note
