@@ -1,5 +1,6 @@
 import React from "react";
 import logoImg from "../assets/logo-removebg.png";
+import { useTempleName } from "../staffApi";
 import "./StaffNav.css";
 
 export type StaffPage = "approvals" | "calendar" | "inventory" | "history";
@@ -25,6 +26,7 @@ export const StaffNav: React.FC<StaffNavProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
+  const templeName = useTempleName(userName ?? "");
   const items: {
     page: StaffPage;
     th: string;
@@ -63,7 +65,7 @@ export const StaffNav: React.FC<StaffNavProps> = ({
         <img src={logoImg} alt="FOMS" />
         <div>
           <strong>FOMS · TEMPLE STAFF PORTAL</strong>
-          <span>วัดศรีสุคต พระอารามหลวง</span>
+          <span>{templeName || "กำลังโหลดชื่อวัด..."}</span>
         </div>
       </div>
       <ul className="staff-nav-menu">
@@ -80,11 +82,9 @@ export const StaffNav: React.FC<StaffNavProps> = ({
       </ul>
       <div className="staff-nav-user">
         <div>
-          <span className="staff-nav-status">
-            สถานะ: เจ้าหน้าที่สำนักงานวัด
-          </span>
+          <span className="staff-nav-status">บัญชีเจ้าหน้าที่วัด</span>
           <strong>{userName ?? "เจ้าหน้าที่วัด"}</strong>
-          <span className="staff-nav-role">ผู้ดูแลระบบศาลา</span>
+          <span className="staff-nav-role">{templeName}</span>
         </div>
         <button
           className="staff-nav-avatar"

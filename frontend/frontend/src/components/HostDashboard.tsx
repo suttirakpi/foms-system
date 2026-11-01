@@ -410,70 +410,13 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <>
-                  <div className="timeline-container">
-                    <div className="timeline-item active">
-                      <div className="timeline-dot" />
-                      <div className="timeline-date">
-                        วันที่ 1 ({formatThaiDate(booking.startDate)}){" "}
-                        <span className="timeline-tag">- วันเริ่มพิธีการ</span>
-                      </div>
-                      <div className="timeline-event">
-                        <div className="event-time">16:30 น.</div>
-                        <div>พิธีรดน้ำศพและบรรจุหีบ ณ {booking.hallName}</div>
-                      </div>
-                      <div className="timeline-event">
-                        <div className="event-time">19:00 น.</div>
-                        <div>สวดพระอภิธรรม คืนที่ 1 (พระสงฆ์ 4 รูป)</div>
-                      </div>
-                    </div>
-
-                    {booking.nights > 1 && (
-                      <div className="timeline-item">
-                        <div className="timeline-dot" />
-                        <div className="timeline-date">
-                          คืนที่ 2 – {booking.nights} (
-                          {formatThaiDate(booking.startDate, 1)} ถึง{" "}
-                          {formatThaiDate(
-                            booking.startDate,
-                            booking.nights - 1,
-                          )}
-                          ){" "}
-                          <span className="timeline-tag gold-tag">
-                            - สวดพระอภิธรรมต่อเนื่อง
-                          </span>
-                        </div>
-                        <div className="timeline-event">
-                          <div className="event-time">19:00 น.</div>
-                          <div>
-                            พิธีสวดพระอภิธรรมประจำคืน ณ {booking.hallName}{" "}
-                            (รองรับแขก {booking.guests} ท่าน/คืน)
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="timeline-item">
-                      <div className="timeline-dot dark-dot" />
-                      <div className="timeline-date">
-                        วันฌาปนกิจ (
-                        {formatThaiDate(booking.startDate, booking.nights)}){" "}
-                        <span className="timeline-tag dark-tag">
-                          - พิธีประชุมเพลิง
-                        </span>
-                      </div>
-                      <div className="timeline-event">
-                        <div className="event-time">10:30 น.</div>
-                        <div>พระสงฆ์แสดงพระธรรมเทศนาและถวายภัตตาหารเพล</div>
-                      </div>
-                      <div className="timeline-event">
-                        <div className="event-time">16:00 น.</div>
-                        <div>พิธีฌาปนกิจ ณ เมรุ {booking.templeName}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="sched-note">กำหนดการเบื้องต้นตามแพ็กเกจ เจ้าหน้าที่วัดจะยืนยันกำหนดการจริงให้หลังอนุมัติ</p>
-                    </>
+                    <p className="sched-note">
+                      {booking.status === "PENDING"
+                        ? "กำหนดการพิธีจะถูกสร้างให้อัตโนมัติทันทีที่เจ้าหน้าที่วัดอนุมัติคำขอจอง (ตามเวลาและกฎของวัด)"
+                        : booking.status === "CANCELLED"
+                          ? "งานนี้ถูกยกเลิกแล้ว จึงไม่มีกำหนดการพิธี"
+                          : "ยังไม่มีกำหนดการพิธี ทีมจัดงานจะสร้างให้ภายหลัง"}
+                    </p>
                   )}
                 </div>
 

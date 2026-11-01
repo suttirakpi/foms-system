@@ -32,8 +32,6 @@ export const Footer: React.FC<FooterProps> = ({
               </span>
             </>
           )}
-          <span className="footer-link">ระเบียบการใช้งาน</span>
-          <span className="footer-link">ติดต่อฝ่ายพิธีการ</span>
         </div>
       </div>
     </footer>

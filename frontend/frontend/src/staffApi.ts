@@ -1,4 +1,5 @@
 // ตัวช่วยเรียก API ฝั่งเจ้าหน้าที่วัด (/api/staff/...) ใช้ร่วมกันทั้ง 4 หน้า
+import { useEffect, useState } from "react";
 import { API_URL } from "./config";
 
 export async function staffFetch<T>(
@@ -72,4 +73,36 @@ export function thaiDateTime(iso: string): string {
     hour12: false,
   }).format(new Date(iso));
   return `${parts} น.`;
+}
+
+// ชื่อวัดที่เจ้าหน้าที่คนนี้สังกัด (ADMIN จะได้ "ทุกวัด") ดึงจากฐานข้อมูลแล้วแคชไว้ใช้ทุกหน้า
+// แคชผูกกับ userKey (ชื่อผู้ใช้) เพื่อไม่ให้ชื่อวัดของคนก่อนหน้าค้างเมื่อสลับบัญชีโดยไม่รีเฟรช
+let templeCache = { key: "", name: "" };
+let templeInflight: { key: string; p: Promise<string> } | null = null;
+export function useTempleName(userKey = ""): string {
+  const [name, setName] = useState(templeCache.key === userKey ? templeCache.name : "");
+  useEffect(() => {
+    if (templeCache.key === userKey && templeCache.name) {
+      setName(templeCache.name);
+      return;
+    }
+    setName("");
+    if (!templeInflight || templeInflight.key !== userKey) {
+      templeInflight = {
+        key: userKey,
+        p: staffFetch<{ templeName?: string }>("/summary")
+          .then((r) => {
+            templeCache = { key: userKey, name: r.templeName || "" };
+            return templeCache.name;
+          })
+          .catch(() => ""),
+      };
+    }
+    let alive = true;
+    templeInflight.p.then((n) => alive && setName(n));
+    return () => {
+      alive = false;
+    };
+  }, [userKey]);
+  return name;
 }

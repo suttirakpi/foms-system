@@ -1,9 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import "./LandingPage.css";
 
 import templeImg from "../assets/img1.jpg";
+import { API_URL } from "../config";
+
+interface LandingPackage {
+  _id: string;
+  name: string;
+  level: "Economy" | "Standard" | "Premium";
+  basePrice: number;
+  snackPerHead: number;
+  desc: string;
+  features?: string[];
+  recommended?: boolean;
+}
+interface LandingTemple {
+  _id: string;
+  name: string;
+  province?: string;
+  halls: { _id: string; isActive?: boolean }[];
+}
+const LEVEL_LABEL: Record<string, string> = { Economy: "ระดับเริ่มต้น", Standard: "ระดับมาตรฐาน", Premium: "ระดับพรีเมียม" };
+const fmtBaht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
 interface LandingPageProps {
   isLoggedIn?: boolean;
@@ -24,6 +44,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateDashboard,
   onLogout,
 }) => {
+  // แพ็กเกจและวัดมาจากฐานข้อมูลจริง (ที่ผู้ดูแลระบบจัดการในหน้าแอดมิน) ไม่ใช่ข้อความตายตัว
+  const [packages, setPackages] = useState<LandingPackage[] | null>(null);
+  const [temples, setTemples] = useState<LandingTemple[]>([]);
+  useEffect(() => {
+    fetch(`${API_URL}/api/master-data`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load failed"))))
+      .then((d) => {
+        setPackages(d.packages || []);
+        setTemples(d.temples || []);
+      })
+      .catch(() => setPackages([]));
+  }, []);
+  const featuredTemple = temples[0];
+
   return (
     <div className="landing-wrapper">
       <Navbar
@@ -96,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="temple-image-mock">
                   <img
                     src={templeImg}
-                    alt="ศาลาบำเพ็ญกุศล วัดพระราม ๙ กาญจนาภิเษก"
+                    alt={featuredTemple ? `ศาลาบำเพ็ญกุศล ${featuredTemple.name}` : "ศาลาบำเพ็ญกุศล"}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
@@ -105,9 +139,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="temple-card-footer">
                   <div className="temple-info">
                     <span className="temple-label">
-                      ศาลาบำเพ็ญกุศลวัดตัวอย่าง:
+                      {temples.length > 1 ? `วัดที่เปิดให้จอง ${temples.length} แห่ง` : "วัดที่เปิดให้จอง"}
                     </span>
-                    <span className="temple-name">วัดพระราม ๙ กาญจนาภิเษก</span>
+                    <span className="temple-name">
+                      {featuredTemple
+                        ? `${featuredTemple.name} · ${featuredTemple.halls.filter((h) => h.isActive !== false).length} ศาลา/เมรุ`
+                        : "กำลังโหลดข้อมูลวัด..."}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -345,121 +383,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="packages-grid">
-              <div className="package-card">
-                <div className="package-card-header">
-                  <div>
-                    <span className="pkg-level">ระดับเริ่มต้น</span>
-                    <h3 className="pkg-title">เศรษฐกิจ พอเพียง</h3>
+              {packages === null && <p className="center-subtitle">กำลังโหลดแพ็กเกจจากระบบ...</p>}
+              {packages !== null && packages.length === 0 && (
+                <p className="center-subtitle">ยังไม่มีแพ็กเกจที่เปิดให้บริการในขณะนี้</p>
+              )}
+              {(packages || []).map((pkg) => (
+                <div key={pkg._id} className={`package-card ${pkg.recommended ? "featured" : ""}`}>
+                  {pkg.recommended && <div className="featured-banner">การเลือกยอดนิยม</div>}
+                  <div className="package-card-header">
+                    <div>
+                      <span className="pkg-level">{LEVEL_LABEL[pkg.level] || pkg.level}</span>
+                      <h3 className="pkg-title">{pkg.name}</h3>
+                    </div>
+                    <span className={`pkg-badge ${pkg.recommended ? "featured-badge" : ""}`}>
+                      เริ่มต้น {fmtBaht(pkg.basePrice)}
+                    </span>
                   </div>
-                  <span className="pkg-badge">พอเพียง</span>
+                  <p className="pkg-desc">{pkg.desc}</p>
+                  <ul className="pkg-checklist">
+                    {(pkg.features || []).map((f) => (
+                      <li key={f}>
+                        <span className="check">✓</span> {f}
+                      </li>
+                    ))}
+                    <li>
+                      <span className="check">✓</span> ค่าบริการรับรองแขก {fmtBaht(pkg.snackPerHead)} ต่อท่านต่อคืน
+                    </li>
+                  </ul>
+                  <button className={pkg.recommended ? "btn-pkg-solid" : "btn-pkg-outline"} onClick={onNavigateBooking}>
+                    ประเมินราคาแพ็กเกจ{pkg.name}
+                  </button>
                 </div>
-                <p className="pkg-desc">
-                  จัดพิธีศาลา พระสงฆ์ และพิธีพื้นฐานครบถ้วนถูกต้องตามหลักศาสนา
-                  เหมาะสำหรับขนาดครอบครัวอบอุ่นและแขกกลุ่มเล็ก
-                </p>
-                <ul className="pkg-checklist">
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    จองศาลาขนาดเล็กและจัดคิวพระสงฆ์สวดอภิธรรม
-                  </li>
-                  <li>
-                    <span className="check">✓</span> หีบศพและดอกไม้มาตรฐาน
-                    เลือกแบบได้โดยไม่เพิ่มราคา
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    อาหารว่างและน้ำดื่มตามจำนวนแขก
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    กำหนดการพิธีดิจิทัลและตารางเวลาสวด
-                  </li>
-                </ul>
-                <button className="btn-pkg-outline" onClick={onNavigateBooking}>
-                  ประเมินราคาแพ็กเกจพอเพียง
-                </button>
-              </div>
-
-              <div className="package-card featured">
-                <div className="featured-banner">การเลือกยอดนิยม</div>
-                <div className="package-card-header">
-                  <div>
-                    <span className="pkg-level">ระดับมาตรฐาน</span>
-                    <h3 className="pkg-title">มาตรฐาน สมเกียรติ</h3>
-                  </div>
-                  <span className="pkg-badge featured-badge">สมเกียรติ</span>
-                </div>
-                <p className="pkg-desc">
-                  บริการครบวงจร ดูแลทั้งพิธีสงฆ์ ดอกไม้ และการต้อนรับ
-                  พร้อมคำนวณค่าใช้จ่ายตามจำนวนแขกอัตโนมัติ
-                </p>
-                <ul className="pkg-checklist">
-                  <li>
-                    <span className="check">✓</span> สิทธิ์จองศาลาขนาดกลาง
-                    พร้อมจัดคิวพระสงฆ์รายคืน
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    หีบศพและดอกไม้หลายแบบให้เลือกฟรี
-                    อัปเกรดเป็นหีบลายไทยพรีเมียมหรือหีบเย็นได้ (มีส่วนต่างราคา)
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    อาหารว่างและเครื่องดื่มคิดตามจำนวนแขกจริง
-                  </li>
-                  <li>
-                    <span className="check">✓</span> ชุดเครื่องเสียงพร้อมไมค์
-                    และของชำร่วย
-                  </li>
-                  <li>
-                    <span className="check">✓</span> E-Card
-                    กำหนดการสำหรับส่งต่อให้แขกผ่านช่องทางออนไลน์
-                  </li>
-                </ul>
-                <button className="btn-pkg-solid" onClick={onNavigateBooking}>
-                  ประเมินราคาแพ็กเกจสมเกียรติ
-                </button>
-              </div>
-
-              <div className="package-card">
-                <div className="package-card-header">
-                  <div>
-                    <span className="pkg-level">ระดับพรีเมียม</span>
-                    <h3 className="pkg-title">พรีเมียม ครบวงจร</h3>
-                  </div>
-                  <span className="pkg-badge">ครบวงจร</span>
-                </div>
-                <p className="pkg-desc">
-                  ครอบคลุมสูงสุด ศาลาปรับอากาศและทีมมัคนายกดูแลตลอดงาน
-                  พร้อมติดตามสถานะและคิวพิธีแบบเรียลไทม์
-                </p>
-                <ul className="pkg-checklist">
-                  <li>
-                    <span className="check">✓</span> ศาลาปรับอากาศขนาดใหญ่
-                    พร้อมจัดคิวพระสงฆ์รายคืน
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    หีบศพแกะสลักหรือหีบปรับอากาศพรีเมียม
-                    และดอกไม้ตกแต่งดีไซน์พิเศษ
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    ทีมมัคนายกและเจ้าหน้าที่พิธีการกำกับตลอดงาน
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    ระบบไฟและเครื่องเสียงเต็มรูปแบบ
-                  </li>
-                  <li>
-                    <span className="check">✓</span>{" "}
-                    จัดเลี้ยงอาหารครบวงจรสำหรับแขกพร้อมเครื่องดื่ม
-                  </li>
-                </ul>
-                <button className="btn-pkg-outline" onClick={onNavigateBooking}>
-                  ประเมินราคาแพ็กเกจครบวงจร
-                </button>
-              </div>
+              ))}
             </div>
 
             <p className="packages-note">

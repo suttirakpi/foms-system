@@ -227,10 +227,6 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({ currentUser, onN
             <b className="t gold">ระบบรักษาความปลอดภัยและการตรวจสอบ</b>
             <p>ทุกการติ๊กขั้นตอนและการตรวจรับของถูกบันทึกพร้อมชื่อผู้ดำเนินการและเวลา ย้อนสถานะไม่ได้</p>
           </div>
-          <div>
-            <b className="t">สายด่วนปฏิบัติการฉุกเฉินหน้างาน</b>
-            <p><b>ศูนย์สนับสนุนส่วนกลาง:</b> 02-998-0119 (ตลอด 24 ชม.)</p>
-          </div>
         </div>
         <div className="bottom">
           <span>© 2025 FOMS. Ceremonial Protocol &amp; Funeral Operations Management. All rights reserved.</span>

@@ -90,10 +90,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onN
               ภายใต้การควบคุมและรักษาความปลอดภัยของสำนักงานศาสนสมบัติส่วนกลาง
             </p>
           </div>
-          <div className="right">
-            <b>ฝ่ายบริหารระบบเทคโนโลยีสารสนเทศ</b>
-            <span>โทร. 02-000-0000 ต่อ 8100 · admin.support@foms.go.th</span>
-          </div>
         </div>
         <div className="adm-footer-bottom">
           <span>© 2025 FOMS Ceremonial Governance &amp; Audit Compliance. สงวนลิขสิทธิ์ตามพระราชบัญญัติข้อมูลข่าวสาร</span>

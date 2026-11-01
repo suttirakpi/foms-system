@@ -5,6 +5,8 @@ const { Booking, Temple } = require("../models/FuneralModels");
 const HallReservation = require("../models/HallReservation");
 const ScheduleItem = require("../models/ScheduleItem");
 const User = require("../models/User");
+const Person = require("../models/Person");
+const PersonAssignment = require("../models/PersonAssignment");
 const { addDays, dateToStr, isValidDateStr, todayInBangkok } = require("../utils/dates");
 
 const STATUSES = ["PENDING", "CONFIRMED", "PAID", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -167,12 +169,24 @@ exports.calendar = async (req, res, next) => {
       .sort({ startDate: 1 })
       .lean();
 
-    const [dtos, items] = await Promise.all([
+    const bookingIds = bookings.map((b) => b._id);
+    const [dtos, items, assigns] = await Promise.all([
       toDtos(bookings),
-      ScheduleItem.find({ bookingId: { $in: bookings.map((b) => b._id) } })
+      ScheduleItem.find({ bookingId: { $in: bookingIds } })
         .sort({ date: 1, time: 1, sortOrder: 1 })
         .lean(),
+      PersonAssignment.find({ bookingId: { $in: bookingIds } }).sort({ date: 1 }).lean(),
     ]);
+    const people = new Map(
+      (await Person.find({ _id: { $in: assigns.map((a) => a.personId) } }).select("name title type").lean()).map((p) => [String(p._id), p]),
+    );
+    const personsByBooking = new Map();
+    for (const a of assigns) {
+      const p = people.get(String(a.personId));
+      const key = String(a.bookingId);
+      if (!personsByBooking.has(key)) personsByBooking.set(key, []);
+      personsByBooking.get(key).push({ date: a.date, role: a.role, name: p ? p.name : "(ไม่พบรายชื่อ)", title: (p && p.title) || "" });
+    }
     const byBooking = new Map();
     for (const it of items) {
       const key = String(it.bookingId);
@@ -197,6 +211,7 @@ exports.calendar = async (req, res, next) => {
         packageName: d.packageName,
         addons: d.addons,
         schedule: byBooking.get(d.id) || [],
+        persons: personsByBooking.get(d.id) || [],
       })),
     );
   } catch (err) {
@@ -269,6 +284,7 @@ exports.summary = async (req, res, next) => {
     const pendingSlips = await Payment.countDocuments({ status: "PENDING", bookingId: { $in: bookingIds } });
 
     res.json({
+      templeName: scope.templeId ? (temples[0] && temples[0].name) || "" : "ทุกวัด",
       pending: pendingRows.length,
       urgent: pendingRows.filter((b) => dateToStr(b.startDate) <= tomorrow).length,
       pendingSlips,

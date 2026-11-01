@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
-import { staffFetch } from "../staffApi";
+import { staffFetch, useTempleName } from "../staffApi";
 import "./TempleStaffInventory.css";
 
 interface TempleStaffInventoryProps {
@@ -71,6 +71,7 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
+  const templeName = useTempleName(currentUser?.name ?? "");
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -177,6 +178,17 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
     }
   };
 
+  const removeItem = async (item: InventoryItem) => {
+    if (!window.confirm(`ลบรายการ ${item.sku} (${item.name}) ออกจากคลังใช่หรือไม่? การลบย้อนกลับไม่ได้`)) return;
+    try {
+      await staffFetch(`/inventory/${encodeURIComponent(item.sku)}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((i) => i.sku !== item.sku));
+      flash(`ลบรายการ ${item.sku} แล้ว`);
+    } catch (err) {
+      flash(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
+    }
+  };
+
   const exportCsv = () => {
     const head = ["SKU", "รายการ", "หมวดหมู่", "ทั้งหมด", "พร้อมใช้", "ใช้งานอยู่", "สถานะ"];
     const rows = visible.map((i) => [
@@ -223,7 +235,7 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
           <strong>คลังอุปกรณ์พิธีการ</strong>
         </div>
         <span className="inv-pretitle">
-          TEMPLE OPERATIONS & CEREMONIAL INVENTORY · วัดศรีสุคต พระอารามหลวง
+          TEMPLE OPERATIONS & CEREMONIAL INVENTORY{templeName ? ` · ${templeName}` : ""}
         </span>
 
         <div className="inv-title-row">
@@ -232,8 +244,8 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
               บริหารคลังอุปกรณ์พิธีการ <small>(Inventory Management)</small>
             </h1>
             <p className="inv-subtitle">
-              ระบบควบคุม ตรวจสอบสถานะคงคลัง และบันทึกการเบิก-ส่งคืนศาสนภัณฑ์สำหรับพิธีบำเพ็ญกุศลและฌาปนกิจ
-              บัญชีการเบิกจ่ายกำกับศาลา 1–3 และเมรุหลวง
+              ควบคุมและตรวจสอบสถานะคงคลังของอุปกรณ์สำหรับพิธีบำเพ็ญกุศลและฌาปนกิจ
+              ข้อมูลเฉพาะของวัดที่ท่านสังกัด เพิ่ม แก้ไข และลบรายการได้
             </p>
           </div>
           <div className="inv-actions">
@@ -320,15 +332,6 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
               <option value="PARTIAL">พร้อมใช้บางส่วน</option>
               <option value="LOW">สต็อกต่ำ (Low Stock)</option>
             </select>
-            <button
-              className="inv-btn"
-              type="button"
-              onClick={() =>
-                flash("เปิดแบบฟอร์มตรวจนับสต็อกประจำวัน (ข้อมูลจำลอง ยังไม่เชื่อมระบบ)")
-              }
-            >
-              ☑ ตรวจนับสต็อกประจำวัน (Daily Stock Audit)
-            </button>
           </div>
           <div className="inv-chips">
             <button
@@ -408,26 +411,9 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
                         <button type="button" onClick={() => openEdit(i)}>
                           แก้ไข
                         </button>
-                        {low ? (
-                          <button
-                            type="button"
-                            className="red"
-                            onClick={() =>
-                              flash(`ส่งคำขอสั่งเพิ่ม ${i.name} แล้ว (ข้อมูลจำลอง)`)
-                            }
-                          >
-                            สั่งเพิ่ม
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              flash(`ประวัติการเบิก ${i.sku} ยังไม่เชื่อมระบบ`)
-                            }
-                          >
-                            ประวัติเบิก
-                          </button>
-                        )}
+                        <button type="button" className="red" onClick={() => removeItem(i)}>
+                          ลบ
+                        </button>
                       </td>
                     </tr>
                   );
@@ -492,13 +478,11 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
         <section className="inv-rules">
           <span className="inv-rules-icon">⛨</span>
           <div>
-            <strong>ระเบียบคลังและการจัดซื้อจัดจ้างศาสนสมบัติ วัดศรีสุคต พระอารามหลวง</strong>
+            <strong>หมายเหตุการใช้งานคลังอุปกรณ์</strong>
             <p>
-              การเบิกใช้อุปกรณ์ประกอบพิธีสงฆ์ทุกชนิด
-              ต้องผ่านการลงนามอนุมัติโดยพิธีกรหรือมัคนายกประจำศาลา
-              และบันทึกหมายเลขอ้างอิงงานจอง (Booking Ref ID)
-              ทุกครั้งเพื่อความโปร่งใสและตรวจสอบได้ในระบบ Audit Ledger
-              กรณีอุปกรณ์ชำรุดหรือสูญหาย ต้องทำบันทึกรายงานต่อกองงานศาสนสมบัติภายใน 24 ชั่วโมง
+              รหัสพัสดุ (SKU) ห้ามซ้ำกันภายในวัดเดียวกัน จำนวนพร้อมใช้ต้องไม่เกินจำนวนทั้งหมด
+              และสถานะ (พร้อมใช้งาน / พร้อมใช้บางส่วน / กำลังใช้งาน / สต็อกต่ำ) เจ้าหน้าที่เป็นผู้กำหนดเอง
+              การ์ดสรุปด้านบนคำนวณจากรายการในคลังจริง
             </p>
           </div>
         </section>
@@ -508,17 +492,10 @@ export const TempleStaffInventory: React.FC<TempleStaffInventoryProps> = ({
         <div className="inv-footer-inner">
           <div>
             <strong>FOMS · Funeral Operations Management System</strong>
-            <p>
-              กองงานศาสนสมบัติและบริหารคลังศาสนภัณฑ์ วัดศรีสุคต พระอารามหลวง ·
-              Liturgical Supply Office
-            </p>
+            <p>{templeName}</p>
           </div>
           <div className="inv-footer-right">
-            <span>
-              เอกสารกำกับทางราชการสำหรับเจ้าหน้าที่สงฆ์และฝ่ายธุรการ
-              เพื่อการบริหารจัดการภายใน
-            </span>
-            <em>© 2025 FOMS Temple Operations Network. สงวนลิขสิทธิ์ตามระเบียบมหาเถรสมาคม.</em>
+            <em>© 2025 FOMS Temple Operations Network. สงวนลิขสิทธิ์ทั้งหมด.</em>
           </div>
         </div>
       </footer>

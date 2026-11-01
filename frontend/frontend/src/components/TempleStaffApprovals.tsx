@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { StaffPaymentReview } from "./StaffPaymentReview";
 import { AuthUser } from "../App";
-import { StaffBooking, staffFetch, thaiDateTime, thaiRange } from "../staffApi";
+import { StaffBooking, staffFetch, thaiDateTime, thaiRange, useTempleName } from "../staffApi";
 import "./TempleStaffApprovals.css";
 
 interface TempleStaffApprovalsProps {
@@ -19,7 +19,6 @@ interface TempleStaffApprovalsProps {
 }
 
 type Flag = "URGENT" | "NORMAL" | "OVER_CAPACITY";
-type DocStatus = "VERIFIED" | "PENDING";
 type Decision = "PENDING" | "APPROVED" | "REJECTED";
 
 interface ApprovalRequest {
@@ -28,10 +27,8 @@ interface ApprovalRequest {
   submittedAt: string;
   flag: Flag;
   hostName: string;
-  hostRelation: string;
   hostPhone: string;
   deceasedName: string;
-  docStatus: DocStatus;
   hallName: string;
   hallCapacity: number;
   packageName: string;
@@ -47,17 +44,15 @@ interface ApprovalRequest {
 }
 
 // แปลงงานจากหน้า API ให้เป็นแถวในตาราง
-// หมายเหตุ: ระบบยังไม่เก็บสถานะใบมรณบัตรและความสัมพันธ์กับผู้วายชนม์ จึงแสดงเป็น "รอตรวจสอบ"/"เจ้าภาพ"
+// แปลงงานจาก API ให้เป็นแถวในตาราง (ข้อมูลทุกช่องมาจากฐานข้อมูลจริง)
 const toRequest = (b: StaffBooking): ApprovalRequest => ({
   id: b.id,
   bookingRef: b.bookingRef,
   submittedAt: thaiDateTime(b.submittedAt),
   flag: b.flag,
   hostName: b.hostName,
-  hostRelation: "เจ้าภาพ",
   hostPhone: b.hostPhone,
   deceasedName: b.deceasedName,
-  docStatus: "PENDING",
   hallName: b.hallName,
   hallCapacity: b.hallCapacity,
   packageName: b.packageName,
@@ -82,18 +77,18 @@ type Filter = "ALL" | "URGENT" | string;
 const GUIDELINES = [
   {
     no: "01",
-    title: "การยืนยันและระบบชำระเงิน",
-    desc: "เมื่อกดยืนยันอนุมัติคำขอ ระบบจะส่งข้อความแจ้งเตือนพร้อมลิงก์ชำระเงินมัดจำไปยังเบอร์ติดต่อเจ้าภาพโดยอัตโนมัติทันที",
+    title: "การอนุมัติและกำหนดการ",
+    desc: "เมื่อกดอนุมัติคำขอ ระบบเปิดให้เจ้าภาพเลือกแผนและชำระเงิน พร้อมสร้างกำหนดการพิธีให้อัตโนมัติตามกฎของวัด",
   },
   {
     no: "02",
-    title: "การจัดสรรพระสงฆ์และมัคนายก",
-    desc: "ระบบทำการนิมนต์พระสงฆ์ 4 รูป และมอบหมายเจ้าหน้าที่มัคนายกประจำศาลาโดยอัตโนมัติตามตารางเวรศาสนกิจประจำวัน",
+    title: "การตรวจสลิปโอนเงิน",
+    desc: "สลิปที่เจ้าภาพส่งมาจะแสดงในตารางด้านล่างของหน้านี้ ตรวจยอดให้ตรงแล้วกดผ่านหรือส่งกลับพร้อมเหตุผล เมื่อผ่านครบทุกงวดสถานะงานเป็น \"ชำระเงินครบ\"",
   },
   {
     no: "03",
-    title: "ธรรมาภิบาลและการบันทึกข้อมูล",
-    desc: "ทุกการอนุมัติ ปฏิเสธ หรือขอปรับเลื่อนเวลา จะถูกลงบันทึกใน Audit Ledger ประจำสำนักงานวัดอย่างถาวรและโปร่งใส",
+    title: "การปฏิเสธคำขอ",
+    desc: "การปฏิเสธจะเก็บเหตุผลไว้กับคำขอและคืนคิวศาลาให้งานอื่นจองได้ทันที เจ้าภาพที่ยังไม่ได้รับอนุมัติสามารถยกเลิกคำขอเองได้",
   },
 ];
 
@@ -109,17 +104,25 @@ interface StaffSummary {
 }
 
 interface ExtraFilters {
-  doc: string;
   flag: string;
   nights: string;
 }
 
-const NO_EXTRA: ExtraFilters = { doc: "ALL", flag: "ALL", nights: "ALL" };
+const NO_EXTRA: ExtraFilters = { flag: "ALL", nights: "ALL" };
 
-const MONTH_PRESETS = [
-  { label: "กรกฎาคม 2569", from: "2026-07-01", to: "2026-07-31" },
-  { label: "สิงหาคม 2569", from: "2026-08-01", to: "2026-08-31" },
-];
+const TH_MONTH_FULL = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+// ปุ่มเลือกช่วงเดือนด่วน = เดือนนี้และเดือนถัดไป (นับจากวันนี้ตามเวลาไทย)
+const MONTH_PRESETS = (() => {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date()).split("-").map(Number);
+  return [0, 1].map((k) => {
+    const d = new Date(Date.UTC(y, m - 1 + k, 1));
+    const yy = d.getUTCFullYear();
+    const mm = d.getUTCMonth();
+    const last = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate();
+    const p = (n: number) => String(n).padStart(2, "0");
+    return { label: `${TH_MONTH_FULL[mm]} ${yy + 543}`, from: `${yy}-${p(mm + 1)}-01`, to: `${yy}-${p(mm + 1)}-${p(last)}` };
+  });
+})();
 
 const thaiDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
@@ -162,6 +165,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
   onNavigateHistory,
   onLogout,
 }) => {
+  const templeName = useTempleName(currentUser?.name ?? "");
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -236,7 +240,6 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
         return false;
       if (dateFrom && r.startISO < dateFrom) return false;
       if (dateTo && r.startISO > dateTo) return false;
-      if (extra.doc !== "ALL" && r.docStatus !== extra.doc) return false;
       if (extra.flag !== "ALL" && r.flag !== extra.flag) return false;
       if (extra.nights !== "ALL" && String(r.nights) !== extra.nights)
         return false;
@@ -305,8 +308,8 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
           </span>
         </div>
         <p className="staff-subtitle">
-          ตรวจสอบความพร้อมของศาลา ตรวจสอบเอกสารใบมรณบัตร
-          และยืนยันการจัดคิวพระสงฆ์ตามวันเวลาที่เจ้าภาพระบุ
+          ตรวจสอบความพร้อมของศาลาและรายละเอียดคำขอจอง
+          แล้วอนุมัติหรือปฏิเสธตามวันเวลาที่เจ้าภาพระบุ
         </p>
       </header>
 
@@ -438,19 +441,6 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
                 <div className="staff-pop staff-pop-right">
                   <div className="staff-pop-title">ตัวกรองเพิ่มเติม</div>
                   <label className="staff-pop-field">
-                    สถานะใบมรณบัตร
-                    <select
-                      value={extra.doc}
-                      onChange={(e) =>
-                        setExtra({ ...extra, doc: e.target.value })
-                      }
-                    >
-                      <option value="ALL">ทั้งหมด</option>
-                      <option value="VERIFIED">ตรวจสอบแล้ว</option>
-                      <option value="PENDING">รอตรวจสอบ</option>
-                    </select>
-                  </label>
-                  <label className="staff-pop-field">
                     ความเร่งด่วน / แจ้งเตือน
                     <select
                       value={extra.flag}
@@ -564,18 +554,11 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
                     </td>
                     <td>
                       <div className="staff-strong">{r.hostName}</div>
-                      <div className="staff-muted">{r.hostRelation}</div>
                       <div className="staff-small">โทร. {r.hostPhone}</div>
                     </td>
                     <td>
                       <div className="staff-strong">{r.deceasedName}</div>
-                      <div
-                        className={`staff-doc ${r.docStatus === "VERIFIED" ? "ok" : "wait"}`}
-                      >
-                        {r.docStatus === "VERIFIED"
-                          ? "ใบมรณบัตร: ตรวจสอบแล้ว"
-                          : "ใบมรณบัตร: รอตรวจสอบ"}
-                      </div>
+                      <div className="staff-muted">ผู้วายชนม์</div>
                     </td>
                     <td>
                       <div className="staff-strong">{r.hallName}</div>
@@ -643,7 +626,7 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
 
         <section className="staff-guide">
           <h2 className="staff-guide-title">
-            แนวทางปฏิบัติการอนุมัติของสำนักงานศาสนสมบัติ วัดศรีสุคต พระอารามหลวง
+            แนวทางปฏิบัติการอนุมัติ{templeName ? ` ของ${templeName}` : ""}
           </h2>
           <div className="staff-guide-grid">
             {GUIDELINES.map((g) => (
@@ -664,22 +647,11 @@ export const TempleStaffApprovals: React.FC<TempleStaffApprovalsProps> = ({
           <div className="staff-footer-top">
             <div>
               <strong>FOMS TEMPLE OPERATIONS NETWORK</strong>
-              <p>
-                ระบบบริหารจัดการพิธีศพและการใช้พื้นที่ศาสนสถาน
-                สำนักงานศาสนสมบัติ วัดศรีสุคต พระอารามหลวง
-              </p>
-            </div>
-            <div className="staff-footer-contact">
-              <span className="staff-gold">สายด่วนประสานงานศาสนพิธีฉุกเฉิน</span>
-              <p>โทร. 02-456-7890 ต่อ 101 (ตลอด 24 ชั่วโมง)</p>
+              <p>ระบบบริหารจัดการพิธีศพและการใช้พื้นที่ศาสนสถาน{templeName ? ` · ${templeName}` : ""}</p>
             </div>
           </div>
           <div className="staff-footer-bottom">
-            <div className="staff-footer-links">
-              <span>ระเบียบปฏิบัติศาสนสถาน</span>
-              <span>นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)</span>
-              <span>ระเบียบข้อบังคับการฌาปนกิจ</span>
-            </div>
+            <span>การคุ้มครองข้อมูล (PDPA Compliant)</span>
             <span>© 2025 FOMS Temple Operations. สงวนลิขสิทธิ์ทุกประการ.</span>
           </div>
         </div>

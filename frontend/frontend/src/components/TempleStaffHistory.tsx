@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { StaffNav } from "./StaffNav";
 import { AuthUser } from "../App";
-import { StaffBooking, staffFetch, thaiDate, thaiRange } from "../staffApi";
+import { StaffBooking, staffFetch, thaiDate, thaiRange, useTempleName } from "../staffApi";
 import "./TempleStaffHistory.css";
 
 interface TempleStaffHistoryProps {
@@ -20,7 +20,7 @@ interface HistoryRecord {
   bookedAt: string;
   host: string;
   hostPhone: string;
-  hostRelation: string;
+  total: number; // ยอดสุทธิของงาน (บาท) ใช้คำนวณสถิติ
   deceased: string;
   deceasedNote: string;
   hall: string;
@@ -42,10 +42,8 @@ const STATUS_LABEL: Record<HistStatus, string> = {
 
 const PAGE_SIZE = 7;
 
-const EXPORT_NOTE = "ข้อมูลจำลอง ยังไม่เชื่อมระบบ";
-
 // แปลงงานจาก API เป็นแถวประวัติ
-// หมายเหตุ: ระบบยังไม่เก็บความสัมพันธ์กับผู้วายชนม์/อายุ จึงแสดงเป็น "เจ้าภาพ" และสรุปจำนวนคืน/แขกแทน
+// deceasedNote สรุปจำนวนคืนและแขกจากข้อมูลจองจริง
 const PAID_LABEL: Record<string, string> = {
   PAID: "ชำระแล้ว",
   PARTIAL: "ชำระบางส่วน",
@@ -58,7 +56,7 @@ const toRecord = (b: StaffBooking): HistoryRecord => ({
   bookedAt: `จองเมื่อ ${thaiDate(b.submittedAt.slice(0, 10))}`,
   host: b.hostName,
   hostPhone: `โทร ${b.hostPhone || "-"}`,
-  hostRelation: "เจ้าภาพ",
+  total: b.grandTotal,
   deceased: b.deceasedName,
   deceasedNote: `สวด ${b.nights} คืน · แขก ${b.guests} ท่าน`,
   hall: b.hallName.split(" (")[0],
@@ -110,6 +108,7 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
   onNavigateInventory,
   onLogout,
 }) => {
+  const templeName = useTempleName(currentUser?.name ?? "");
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -163,6 +162,21 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const shown = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // สถิติบนการ์ด คำนวณจากงานทั้งหมดที่โหลดมา (ไม่ขึ้นกับตัวกรอง)
+  const stats = useMemo(() => {
+    const done = records.filter((r) => r.status === "COMPLETED");
+    const cancelled = records.filter((r) => r.status === "CANCELLED");
+    const pct = (n: number) => (records.length ? Math.round((n / records.length) * 1000) / 10 : 0);
+    return {
+      total: records.length,
+      done: done.length,
+      donePct: pct(done.length),
+      cancelled: cancelled.length,
+      cancelledPct: pct(cancelled.length),
+      revenue: done.reduce((n, r) => n + r.total, 0),
+    };
+  }, [records]);
 
   const reset = () => {
     setSearch("");
@@ -240,7 +254,7 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
             <p className="his-subtitle">
               บันทึกข้อมูลคำขอจองศาลา ลำดับพิธีการสวดพระอภิธรรม
               และพิธีฌาปนกิจที่เสร็จสิ้นสมบูรณ์หรือยกเลิก
-              พร้อมระบบตรวจสอบย้อนกลับ (Audit Log) ตามมาตรฐานการกำกับดูแลศาสนสมบัติ
+              ตรวจดูรายละเอียดและเหตุผลของแต่ละรายการย้อนหลังได้
             </p>
           </div>
           <div className="his-pop-anchor">
@@ -278,12 +292,12 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <i>▤</i>
             </div>
             <div className="his-stat-value">
-              148 <small>งาน</small>
+              {stats.total} <small>งาน</small>
             </div>
             <strong>งานพิธีทั้งหมดในประวัติ</strong>
             <div className="his-stat-foot">
-              <span>รอบปี พ.ศ. 2568 — 2569</span>
-              <em>บันทึกสะสม</em>
+              <span>เสร็จสิ้นและยกเลิกรวมกัน</span>
+              <em>ทุกช่วงเวลา</em>
             </div>
           </div>
           <div className="his-stat">
@@ -292,12 +306,12 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <i>✓</i>
             </div>
             <div className="his-stat-value">
-              139 <small>งาน</small>
+              {stats.done} <small>งาน</small>
             </div>
             <strong>พิธีการเสร็จสมบูรณ์</strong>
             <div className="his-stat-foot">
-              <span>93.9% ส่งมอบเรียบร้อยสมเกียรติ</span>
-              <em>สมบูรณ์</em>
+              <span>{stats.donePct}% ของงานในประวัติ</span>
+              <em>ปิดงานแล้ว</em>
             </div>
           </div>
           <div className="his-stat">
@@ -306,24 +320,24 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <i>▦</i>
             </div>
             <div className="his-stat-value">
-              9 <small>คำขอ</small>
+              {stats.cancelled} <small>คำขอ</small>
             </div>
-            <strong>คำขอยกเลิก / คืนคิวจัด</strong>
+            <strong>คำขอยกเลิก / ถูกปฏิเสธ</strong>
             <div className="his-stat-foot">
-              <span>คืนมัดจำ/แจ้งล่วงหน้าตามเกณฑ์</span>
-              <span>6.1%</span>
+              <span>คืนคิวศาลาให้งานอื่นแล้ว</span>
+              <span>{stats.cancelledPct}%</span>
             </div>
           </div>
           <div className="his-stat">
             <div className="his-stat-top">
-              <span>04 · TOTAL ENDOWMENT</span>
+              <span>04 · TOTAL VALUE</span>
               <i>฿</i>
             </div>
-            <div className="his-stat-value">฿1,248,500</div>
-            <strong>ยอดบำรุงศาสนสถานสะสม</strong>
+            <div className="his-stat-value">฿{stats.revenue.toLocaleString("th-TH")}</div>
+            <strong>ยอดรวมของงานที่เสร็จสิ้น</strong>
             <div className="his-stat-foot">
-              <span>เข้าบัญชีสำนักงานศาสนสมบัติ</span>
-              <em>ตรวจรับแล้ว</em>
+              <span>ยอดสุทธิตามใบจอง (ไม่รวมงานที่ยกเลิก)</span>
+              <em>คำนวณจากข้อมูลจริง</em>
             </div>
           </div>
         </section>
@@ -461,7 +475,7 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
                       <td>
                         <div className="his-strong">{r.host}</div>
                         <div className="his-muted">
-                          {r.hostPhone} ({r.hostRelation})
+                          {r.hostPhone}
                         </div>
                       </td>
                       <td>
@@ -571,25 +585,12 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
         <section className="his-gov">
           <span className="his-gov-icon">⛨</span>
           <div className="his-gov-text">
-            <strong>
-              มาตรฐานการจัดเก็บข้อมูลประวัติงานพิธีการ (ARCHIVE GOVERNANCE & RETENTION)
-            </strong>{" "}
-            <span className="his-gov-tag">สำเนาถูกต้อง</span>
+            <strong>ข้อมูลประวัติงานพิธีการ</strong>{" "}
+            <span className="his-gov-tag">ดึงจากฐานข้อมูลของระบบ</span>
             <p>
-              บันทึกประวัติและสำเนาใบเสร็จ/ภาพถ่ายพิธีการจะถูกจัดเก็บรักษาไว้ในระบบคลาวด์ความมั่นคงสูงไม่น้อยกว่า
-              10 ปี ตามระเบียบมหาเถรสมาคม พร้อม Digital Timestamp ยืนยันความถูกต้อง
-              ไม่สามารถแก้ไขหรือลบทำลายโดยพลการ
+              รายการในหน้านี้คืองานที่ทีมจัดงานปิดงานแล้วหรืองานที่ถูกยกเลิก/ปฏิเสธ
+              งานที่อยู่ในสถานะเหล่านี้ไม่สามารถเปลี่ยนสถานะย้อนกลับผ่านระบบได้
             </p>
-          </div>
-          <div className="his-gov-side">
-            <div>
-              <span>บันทึกล่าสุด</span>
-              <b>14 ก.พ. 69 · 14:30 น.</b>
-            </div>
-            <div>
-              <span>ตรวจสอบโดย</span>
-              <b>ฝ่ายศาสนสมบัติ</b>
-            </div>
           </div>
         </section>
       </div>
@@ -599,19 +600,13 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
         <div className="his-footer-inner">
           <div>
             <strong>ระบบบริหารจัดการงานฌาปนกิจและศาสนสมบัติ (FOMS)</strong>
-            <p>
-              วัดศรีสุคต พระอารามหลวง เขตการปกครองคณะสงฆ์ภาคกลาง
-              แขวง/ตำบลในเขตศาสนสมบัติ
-            </p>
+            <p>{templeName}</p>
           </div>
           <div className="his-footer-item">
-            <span className="his-dot">●</span> มาตรฐานกำกับดูแลและตรวจสอบทางศาสนกิจ พ.ศ. 2564
+            <span className="his-dot">●</span> การคุ้มครองข้อมูล (PDPA Compliant)
           </div>
           <div className="his-footer-item">
-            ☎ สายด่วนฝ่ายประสานงานพิธีการ: 02-xxx-xxxx ต่อ 101
-          </div>
-          <div className="his-footer-item">
-            © 2025 FOMS. สงวนลิขสิทธิ์ทั้งหมดโดยฝ่ายศาสนสมบัติ.
+            © 2025 FOMS. สงวนลิขสิทธิ์ทั้งหมด.
           </div>
         </div>
       </footer>
@@ -631,7 +626,7 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
               <div>
                 <dt>เจ้าภาพ</dt>
                 <dd>
-                  {detail.host} · {detail.hostPhone} ({detail.hostRelation})
+                  {detail.host} · {detail.hostPhone}
                 </dd>
               </div>
               <div>
@@ -665,7 +660,6 @@ export const TempleStaffHistory: React.FC<TempleStaffHistoryProps> = ({
                 <dd>{detail.bookedAt.replace("จองเมื่อ ", "")}</dd>
               </div>
             </dl>
-            <p className="his-modal-note">{EXPORT_NOTE}</p>
             <div className="his-modal-foot">
               <button type="button" className="his-btn dark" onClick={() => setDetail(null)}>
                 ปิด
