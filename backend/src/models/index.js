@@ -10,6 +10,9 @@ const StepLog = require("./StepLog");
 const Notification = require("./Notification");
 const TempleRule = require("./TempleRule");
 const Inventory = require("./Inventory");
+const RunStep = require("./RunStep");
+const VendorDelivery = require("./VendorDelivery");
+const MeritEnvelope = require("./MeritEnvelope");
 
 const models = {
   User,
@@ -26,6 +29,9 @@ const models = {
   Notification,
   TempleRule,
   Inventory,
+  RunStep,
+  VendorDelivery,
+  MeritEnvelope,
 };
 
 // สร้าง index ทุกตัวให้ตรงกับ schema (เรียกก่อนเทสต์/seed)

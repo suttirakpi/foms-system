@@ -9,6 +9,7 @@ const pricingRoutes = require("./routes/pricingRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const staffBookingRoutes = require("./routes/staffBookingRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const opsRoutes = require("./routes/opsRoutes");
 const { AppError } = require("./utils/pricing");
 
 const app = express();
@@ -41,6 +42,7 @@ app.use("/api", pricingRoutes);
 app.use("/api", scheduleRoutes);
 app.use("/api/staff", staffBookingRoutes);
 app.use("/api/staff", inventoryRoutes);
+app.use("/api/ops", opsRoutes);
 
 // Health Check Routes
 app.get("/", (req, res) => {
