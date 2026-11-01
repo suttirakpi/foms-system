@@ -1,0 +1,80 @@
+classDiagram
+direction TB
+
+class Payment["งวดชำระเงิน (Payment)"] {
+  _id : ObjectId
+  bookingId : ObjectId
+  plan : FULL | INSTALLMENT
+  installmentNo : Number
+  label : String
+  amountDue : Number
+  status : UNPAID | PENDING | APPROVED | REJECTED
+  slip : path, hash, originalName
+  paidAmount : Number
+  paidAt : Date
+  reviewedBy : ObjectId
+  reviewedAt : Date
+  rejectReason : String
+}
+
+class ScheduleItem["กำหนดการพิธี (ScheduleItem)"] {
+  _id : ObjectId
+  bookingId : ObjectId
+  date : String
+  time : String HH:MM
+  type : BATHING | CHANT | CREMATION | MERIT
+  title : String
+  hallId : ObjectId
+  sortOrder : Number
+}
+
+class TempleRule["กฎของวัด (TempleRule)"] {
+  _id : ObjectId
+  templeId : ObjectId
+  key : String
+  value : Mixed
+  description : String
+  unique(templeId, key)
+}
+
+class Person["พระ/มัคนายก/พิธีกร (Person)"] {
+  _id : ObjectId
+  templeId : ObjectId
+  type : MONK | DEACON | MC
+  name : String
+  title : String
+  isActive : Boolean
+}
+
+class PersonAssignment["การจัดบุคลากรเข้าพิธี (PersonAssignment)"] {
+  _id : ObjectId
+  personId : ObjectId
+  bookingId : ObjectId
+  date : String
+  role : CHIEF | MC | CHANT
+  unique(personId, date)
+}
+
+class Booking["การจอง (Booking)"] {
+  _id : ObjectId
+  bookingRef : String
+  hostId : ObjectId
+  templeId : ObjectId
+  hallId : ObjectId
+  startDate : Date
+  endDate : Date วันฌาปนกิจ
+  status : PENDING | CONFIRMED | PAID | IN_PROGRESS | COMPLETED | CANCELLED
+  paymentStatus : UNPAID | SLIP_UPLOADED | PARTIAL | PAID
+}
+class Temple["วัด (Temple)"] {
+  _id : ObjectId
+  name : String
+}
+
+Temple "1" --> "0..*" Person : มีบุคลากร
+Temple "1" --> "0..*" TempleRule : มีกฎ
+Temple "1" --> "0..*" Booking
+Booking "1" --> "0..*" Payment
+Booking "1" --> "0..*" ScheduleItem
+Booking "1" --> "0..*" PersonAssignment
+Person "1" --> "0..*" PersonAssignment

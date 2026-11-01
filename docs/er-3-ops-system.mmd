@@ -1,0 +1,154 @@
+classDiagram
+direction TB
+
+class RunStep["ขั้นตอนพิธีรายคืน (RunStep)"] {
+  _id : ObjectId
+  bookingId : ObjectId
+  date : String
+  n : Number
+  time : String
+  range : String
+  title : String
+  desc : String
+  status : wait | active | done
+  doneBy : ObjectId
+  doneByName : String
+  doneAt : Date
+}
+
+class VendorDelivery["ตรวจรับของคู่ค้า (VendorDelivery)"] {
+  _id : ObjectId
+  bookingId : ObjectId
+  templeId : ObjectId
+  category : String
+  title : String
+  partner : String
+  expectedTime : String
+  detail : String
+  status : SHIPPING | ARRIVED | RECEIVED
+  receivedBy : ObjectId
+  receivedByName : String
+  receivedAt : Date
+  ref : String
+  note : String
+}
+
+class MeritEnvelope["ซองทำบุญ (MeritEnvelope)"] {
+  _id : ObjectId
+  bookingId : ObjectId
+  date : String
+  donorName : String
+  amount : Number
+  note : String
+  recordedBy : ObjectId
+  recordedByName : String
+  voided : Boolean
+  voidReason : String
+  voidedByName : String
+  voidedAt : Date
+}
+
+class Inventory["คลังอุปกรณ์ (Inventory)"] {
+  _id : ObjectId
+  templeId : ObjectId
+  sku : String
+  name : String
+  desc : String
+  category : String
+  unit : String
+  total : Number
+  ready : Number
+  usingNote : String
+  status : IN_USE | PARTIAL | LOW | READY
+  unique(templeId, sku)
+}
+
+class AuditLog["บันทึกการตรวจสอบ (AuditLog)"] {
+  _id : ObjectId
+  actorId : ObjectId
+  actorName : String
+  actorRole : String
+  action : CREATE | UPDATE | ACTIVATE | DEACTIVATE | RULES_UPDATE | PASSWORD_CHANGE
+  entity : USER | TEMPLE | HALL | PACKAGE | ADDON | PERSON | RULES
+  entityId : String
+  summary : String
+  createdAt : Date
+}
+
+class Notification["การแจ้งเตือน (Notification)"] {
+  _id : ObjectId
+  userId : ObjectId
+  bookingId : ObjectId
+  type : CHANT_REMINDER | CREMATION_REMINDER | MERIT_REMINDER | STATUS_CHANGE
+  title : String
+  message : String
+  readAt : Date
+  dedupeKey : String
+}
+
+class Counter["ตัวนับรหัสงาน (Counter)"] {
+  _id : String booking-พ.ศ.
+  seq : Number
+}
+
+class StepLog["ล็อกติ๊กสเต็ป (StepLog) ยังไม่ได้ใช้"] {
+  bookingId : ObjectId
+  date : String
+  step : BATHING_START | MONKS_SEATED | CHANTING | CLOSED
+  doneBy : ObjectId
+  doneAt : Date
+}
+
+class Staff["บุคลากรระบบจัดเวร (Staff) ยังไม่เปิดใช้"] {
+  name : String
+  role : MONK | MC
+  templeId : ObjectId
+  phone : String
+  isActive : Boolean
+}
+
+class DutyAssignment["การจัดเวร (DutyAssignment) ยังไม่เปิดใช้"] {
+  bookingId : ObjectId
+  templeId : ObjectId
+  dutyDate : Date
+  monkIds : ObjectId[]
+  mcId : ObjectId
+  status : SCHEDULED | IN_PROGRESS | COMPLETED | CANCELLED
+}
+
+class Booking["การจอง (Booking)"] {
+  _id : ObjectId
+  bookingRef : String
+  hostId : ObjectId
+  templeId : ObjectId
+  hallId : ObjectId
+  startDate : Date
+  endDate : Date วันฌาปนกิจ
+  status : PENDING | CONFIRMED | PAID | IN_PROGRESS | COMPLETED | CANCELLED
+  paymentStatus : UNPAID | SLIP_UPLOADED | PARTIAL | PAID
+}
+class Temple["วัด (Temple)"] {
+  _id : ObjectId
+  name : String
+}
+class User["ผู้ใช้งาน (User)"] {
+  _id : ObjectId
+  name : String
+  role : ADMIN | STAFF | OPS | HOST
+}
+
+Temple "1" --> "0..*" User : สังกัด (STAFF/OPS)
+Temple "1" --> "0..*" Inventory : มีคลัง
+User "1" --> "0..*" Booking : เจ้าภาพ (hostId)
+Temple "1" --> "0..*" Booking
+Booking "1" --> "0..*" RunStep
+Booking "1" --> "0..*" VendorDelivery
+Temple "1" --> "0..*" VendorDelivery
+Booking "1" --> "0..*" MeritEnvelope
+User "1" --> "0..*" AuditLog : ผู้ดำเนินการ
+User "1" --> "0..*" Notification
+Booking "1" --> "0..*" Notification
+Booking "1" --> "0..*" StepLog
+Temple "1" --> "0..*" Staff
+Booking "1" --> "0..*" DutyAssignment
+Staff "0..*" -- "0..*" DutyAssignment
