@@ -11,7 +11,9 @@ const {
   isValidDateStr,
   nightDates,
   todayInBangkok,
+  addDays,
 } = require("../utils/dates");
+const { getRules, ADVANCE_BOOKING_DAYS } = require("../utils/templeRules");
 
 const ALLOWED_NIGHTS = [1, 3, 5, 7];
 const MAX_GUESTS = 1000;
@@ -95,6 +97,11 @@ router.post("/bookings", protect, restrictTo("HOST"), async (req, res) => {
     if (!temple || !temple.isActive || !hall || hall.isActive === false)
       return bad(res, "ไม่พบวัดหรือศาลาที่เลือก");
     if (!pkg || pkg.isActive === false) return bad(res, "ไม่พบแพ็กเกจที่เลือก");
+
+    // กฎวัดที่แอดมินเปิดไว้: รับจองล่วงหน้าไม่เกิน 60 วัน
+    const rules = await getRules(temple._id);
+    if (rules.ADVANCE_BOOKING_LIMIT_60 && startDate > addDays(todayInBangkok(), ADVANCE_BOOKING_DAYS))
+      return bad(res, `วัดเปิดรับจองล่วงหน้าไม่เกิน ${ADVANCE_BOOKING_DAYS} วัน กรุณาเลือกวันที่ใกล้กว่านี้`);
 
     const uniqueAddonIds = [...new Set(addonIds)];
     const selectedAddons = await Addon.find({

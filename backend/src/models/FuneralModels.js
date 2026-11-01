@@ -10,6 +10,10 @@ const hallSchema = new mongoose.Schema({
   pricePerNight: { type: Number, required: true, min: 0 },
   kind: { type: String, enum: ["HALL", "CREMATORIUM"], default: "HALL" }, // เพิ่มใหม่: ศาลา / เมรุ
   isActive: { type: Boolean, default: true }, // เพิ่มใหม่
+  code: { type: String, trim: true }, // เพิ่มใหม่: รหัสแสดงในหน้าแอดมิน เช่น HAL-01
+  description: { type: String, trim: true }, // เพิ่มใหม่
+  equipment: { type: String, trim: true }, // เพิ่มใหม่: อุปกรณ์ประจำศาลา
+  feeNote: { type: String, trim: true }, // เพิ่มใหม่: หมายเหตุค่าบำรุง
 });
 
 // 2. วัด

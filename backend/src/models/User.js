@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     isActive: { type: Boolean, default: true },
+    lastLoginAt: { type: Date }, // เวลาเข้าสู่ระบบล่าสุด (แสดงในหน้าแอดมิน)
   },
   { timestamps: true },
 );

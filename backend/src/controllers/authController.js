@@ -138,6 +138,7 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return invalid();
 
+    await User.updateOne({ _id: user._id }, { lastLoginAt: new Date() });
     sendTokenResponse(user, 200, res);
   } catch (error) {
     res.status(500).json({
