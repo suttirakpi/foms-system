@@ -286,3 +286,5 @@
 .org-step.disputed .card { border: 1.5px solid #b5452d; background: #fff6f3; }
 .org-step.disputed .marker { border-color: #b5452d; color: #b5452d; }
 .org-step .tag.disputed { color: #b5452d; padding: 0; }
+
+.org-wait-host { color: #b5452d; font-weight: 600; }

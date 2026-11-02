@@ -348,8 +348,15 @@ exports.setStatus = wrap(async (req, res) => {
   if (next === "COMPLETED") {
     const pendingVendors = await VendorDelivery.countDocuments({ bookingId: booking._id, status: { $ne: "RECEIVED" } });
     const unconfirmed = await RunStep.countDocuments({ bookingId: booking._id, status: { $in: ["review", "disputed"] } });
-    if (unconfirmed > 0 && !req.body.force)
-      return res.status(409).json({ code: "STEPS_UNCONFIRMED", count: unconfirmed, message: `ยังมีขั้นตอนที่เจ้าภาพไม่ได้ยืนยัน ${unconfirmed} รายการ` });
+    // ทีมจัดงาน (OPS) ปิดงานไม่ได้จนกว่าเจ้าภาพจะยืนยันทุกขั้นตอน (force ไม่มีผล)
+    // เจ้าหน้าที่วัด/แอดมินปิดแทนได้ด้วย force เผื่อกรณีเจ้าภาพไม่ตอบ
+    const canOverride = req.user.role !== "OPS" && req.body.force;
+    if (unconfirmed > 0 && !canOverride)
+      return res.status(409).json({
+        code: "STEPS_UNCONFIRMED", count: unconfirmed,
+        canOverride: req.user.role !== "OPS",
+        message: `ยังมีขั้นตอนที่เจ้าภาพไม่ได้ยืนยัน ${unconfirmed} รายการ ต้องให้เจ้าภาพยืนยันครบก่อนจึงจะปิดงานได้`,
+      });
     if (pendingVendors > 0 && !req.body.force)
       return res.status(409).json({ code: "VENDORS_PENDING", count: pendingVendors, message: `ยังมีของที่ยังไม่ตรวจรับ ${pendingVendors} รายการ` });
   }

@@ -630,9 +630,13 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
       try {
         await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status } });
       } catch (err) {
-        if (err instanceof ApiError && (err.code === "VENDORS_PENDING" || err.code === "STEPS_UNCONFIRMED")) {
-          const what = err.code === "STEPS_UNCONFIRMED" ? "ที่เจ้าภาพยังไม่ได้ยืนยัน" : "ที่ยังตรวจรับไม่ครบ";
-          if (!window.confirm(`${err.message}\nปิดงานทั้งที่${what}หรือไม่?`)) return;
+        if (err instanceof ApiError && err.code === "STEPS_UNCONFIRMED") {
+          flash(err.message, true); // ต้องรอเจ้าภาพยืนยันครบก่อน (ข้ามไม่ได้)
+          return;
+        }
+        if (err instanceof ApiError && err.code === "VENDORS_PENDING") {
+          if (!window.confirm(`${err.message}
+ปิดงานทั้งที่ยังตรวจรับไม่ครบหรือไม่?`)) return;
           await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status, force: true } });
         } else throw err;
       }
@@ -672,10 +676,18 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
         </tbody>
       </table>
       <div className="org-closebar">
+        {sum.canComplete && sum.steps.awaitingHost > 0 && (
+          <p className="org-wait-host">รอเจ้าภาพยืนยัน {sum.steps.awaitingHost} ขั้นตอน จึงจะปิดงานได้</p>
+        )}
         <p>เจ้าภาพ {sum.job.hostName} · {sum.job.hallName} · {thDate(sum.job.startISO)} – {thDate(sum.job.cremationISO)} · แขกประมาณ {sum.job.guests} ท่าน</p>
         <div className="org-actions">
           {sum.canStart && <button className="org-ghost" disabled={busy} onClick={() => setStatus("IN_PROGRESS")}>เริ่มดำเนินงาน</button>}
-          <button className="org-btn-black" disabled={busy || !sum.canComplete} onClick={() => setStatus("COMPLETED")} title={sum.canComplete ? "" : "ต้องเริ่มดำเนินงาน (ติ๊กขั้นตอนแรก) ก่อน จึงปิดงานได้"}>
+          <button
+            className="org-btn-black"
+            disabled={busy || !sum.canComplete || sum.steps.awaitingHost > 0}
+            onClick={() => setStatus("COMPLETED")}
+            title={!sum.canComplete ? "ต้องเริ่มดำเนินงาน (ติ๊กขั้นตอนแรก) ก่อน จึงปิดงานได้" : sum.steps.awaitingHost > 0 ? "ต้องรอเจ้าภาพยืนยันทุกขั้นตอนก่อน" : ""}
+          >
             ปิดงาน (Complete Job) <IconArrow />
           </button>
         </div>
