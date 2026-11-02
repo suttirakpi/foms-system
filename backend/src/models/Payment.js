@@ -23,6 +23,9 @@ const paymentSchema = new mongoose.Schema(
       path: String,         // ชื่อไฟล์ในโฟลเดอร์เก็บสลิป
       hash: String,         // sha256 ของไฟล์ ใช้เช็กสลิปซ้ำ
       originalName: String,
+      contentType: String,  // image/jpeg | image/png
+      // ตัวรูปเก็บใน DB เพื่อให้ทุกเครื่องที่ต่อ DB เดียวกันเปิดดูได้ (ไม่ดึงมากับ query ปกติ)
+      data: { type: Buffer, select: false },
     },
     paidAmount: Number,
     paidAt: Date,
