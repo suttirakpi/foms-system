@@ -39,7 +39,13 @@ interface BookingDetail {
     addonsTotal: number;
     grandTotal: number;
   };
-  status: "PENDING" | "CONFIRMED" | "PAID" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "PAID"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "CANCELLED";
   paymentStatus?: "UNPAID" | "SLIP_UPLOADED" | "PARTIAL" | "PAID";
   paymentSlipUrl?: string;
   shareToken?: string;
@@ -69,7 +75,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     try {
       setLoading(true);
       // เซิร์ฟเวอร์ใช้ผู้ใช้จาก cookie (JWT) ไม่ต้องส่ง hostId
-      const res = await fetch(`${API_URL}/api/bookings/my`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/api/bookings/my`, {
+        credentials: "include",
+      });
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         setList(data);
@@ -89,7 +97,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
   const refreshBooking = async () => {
     if (!booking) return;
     try {
-      const res = await fetch(`${API_URL}/api/bookings/my`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/api/bookings/my`, {
+        credentials: "include",
+      });
       const data = await res.json();
       if (Array.isArray(data)) {
         setList(data);
@@ -123,7 +133,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     if (!booking) return;
     setShareBusy(true);
     try {
-      const r = await hostFetch<{ token: string }>(`/bookings/${booking._id}/share`, { method: "POST" });
+      const r = await hostFetch<{ token: string }>(
+        `/bookings/${booking._id}/share`,
+        { method: "POST" },
+      );
       setShareToken(r.token);
     } catch (err) {
       alert(errMsg(err));
@@ -132,7 +145,13 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
     }
   };
   const revokeShare = async () => {
-    if (!booking || !window.confirm("ยกเลิกลิงก์บัตรเชิญนี้ใช่หรือไม่? คนที่ได้รับลิงก์เดิมจะเปิดดูไม่ได้อีก")) return;
+    if (
+      !booking ||
+      !window.confirm(
+        "ยกเลิกลิงก์บัตรเชิญนี้ใช่หรือไม่? คนที่ได้รับลิงก์เดิมจะเปิดดูไม่ได้อีก",
+      )
+    )
+      return;
     setShareBusy(true);
     try {
       await hostFetch(`/bookings/${booking._id}/share`, { method: "DELETE" });
@@ -143,7 +162,9 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
       setShareBusy(false);
     }
   };
-  const inviteUrl = shareToken ? `${window.location.origin}/#invite/${shareToken}` : "";
+  const inviteUrl = shareToken
+    ? `${window.location.origin}/#invite/${shareToken}`
+    : "";
   const copyInvite = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
@@ -197,11 +218,25 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
 
   // จัดกลุ่มกำหนดการจริงตามวัน
   const schedDates = [...new Set(schedule.map((i) => i.date))].sort();
-  const SCHED_TYPE: Record<string, string> = { BATHING: "พิธีสรงน้ำศพ", CHANT: "สวดพระอภิธรรม", CREMATION: "พิธีฌาปนกิจ", MERIT: "ทำบุญอุทิศส่วนกุศล" };
-  const ROLE_TH: Record<string, string> = { CHIEF: "พระประธาน", CHANT: "พระสวด", MC: "มัคนายก/พิธีกร" };
+  const SCHED_TYPE: Record<string, string> = {
+    BATHING: "พิธีสรงน้ำศพ",
+    CHANT: "สวดพระอภิธรรม",
+    CREMATION: "พิธีฌาปนกิจ",
+    MERIT: "ทำบุญอุทิศส่วนกุศล",
+  };
+  const ROLE_TH: Record<string, string> = {
+    CHIEF: "พระประธาน",
+    CHANT: "พระสวด",
+    MC: "มัคนายก/พิธีกร",
+  };
   const thDay = (iso: string) => {
     const [y, m, d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("th-TH", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("th-TH", {
+      timeZone: "UTC",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   return (
@@ -262,9 +297,18 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
             {list.length > 1 && (
               <div className="booking-picker">
                 งานของฉัน ({list.length} งาน)
-                <select value={booking._id} onChange={(e) => setBooking(list.find((b) => b._id === e.target.value) || booking)}>
+                <select
+                  value={booking._id}
+                  onChange={(e) =>
+                    setBooking(
+                      list.find((b) => b._id === e.target.value) || booking,
+                    )
+                  }
+                >
                   {list.map((b) => (
-                    <option key={b._id} value={b._id}>{b.bookingRef} · {b.deceasedName} ({b.status})</option>
+                    <option key={b._id} value={b._id}>
+                      {b.bookingRef} · {b.deceasedName} ({b.status})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -394,18 +438,21 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                       {schedDates.map((d) => (
                         <div key={d} className="rs-day">
                           <h4>{thDay(d)}</h4>
-                          {schedule.filter((i) => i.date === d).map((i) => (
-                            <div key={i._id} className="rs-row">
-                              <b>{i.time ? `${i.time} น.` : "ตลอดวัน"}</b>
-                              <span>
-                                {i.title}
-                                <em>
-                                  {SCHED_TYPE[i.type] || i.type}
-                                  {i.persons.length > 0 && ` · ${i.persons.map((p) => `${ROLE_TH[p.role] || p.role}: ${p.name}`).join(", ")}`}
-                                </em>
-                              </span>
-                            </div>
-                          ))}
+                          {schedule
+                            .filter((i) => i.date === d)
+                            .map((i) => (
+                              <div key={i._id} className="rs-row">
+                                <b>{i.time ? `${i.time} น.` : "ตลอดวัน"}</b>
+                                <span>
+                                  {i.title}
+                                  <em>
+                                    {SCHED_TYPE[i.type] || i.type}
+                                    {i.persons.length > 0 &&
+                                      ` · ${i.persons.map((p) => `${ROLE_TH[p.role] || p.role}: ${p.name}`).join(", ")}`}
+                                  </em>
+                                </span>
+                              </div>
+                            ))}
                         </div>
                       ))}
                     </div>
@@ -446,29 +493,46 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                       className="btn-download-ecard"
                       onClick={() => window.print()}
                     >
-                      <span>↓</span> ดาวน์โหลด E-Card บัตรเชิญ (PDF / Print)
+                      <span>↓</span> ดาวน์โหลด ใบเสร็จ (PDF / Print)
                     </button>
-                    <div className="ecard-note">
+                    {/* <div className="ecard-note">
                       สร้างจากข้อมูลจริงในฐานข้อมูลอัตโนมัติ
-                    </div>
+                    </div> */}
                   </div>
 
                   {booking.status !== "CANCELLED" && (
                     <div className="share-box">
                       <b>ส่งบัตรเชิญให้ญาติและแขกผ่านลิงก์</b>
                       {!shareToken ? (
-                        <button className="btn-solid-black" disabled={shareBusy} onClick={createShare}>
+                        <button
+                          className="btn-solid-black"
+                          disabled={shareBusy}
+                          onClick={createShare}
+                        >
                           {shareBusy ? "กำลังสร้าง..." : "สร้างลิงก์บัตรเชิญ"}
                         </button>
                       ) : (
                         <>
                           <code>{inviteUrl}</code>
                           <div className="share-actions">
-                            <button className="solid" onClick={copyInvite}>{copied ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}</button>
-                            <a href={inviteUrl} target="_blank" rel="noreferrer">เปิดดูบัตรเชิญ</a>
-                            <button onClick={revokeShare} disabled={shareBusy}>ยกเลิกลิงก์</button>
+                            <button className="solid" onClick={copyInvite}>
+                              {copied ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}
+                            </button>
+                            <a
+                              href={inviteUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              เปิดดูบัตรเชิญ
+                            </a>
+                            <button onClick={revokeShare} disabled={shareBusy}>
+                              ยกเลิกลิงก์
+                            </button>
                           </div>
-                          <span>ผู้ที่มีลิงก์ดูได้เฉพาะชื่อ วัน สถานที่ และกำหนดการ ไม่เห็นราคาหรือข้อมูลส่วนตัว</span>
+                          <span>
+                            ผู้ที่มีลิงก์ดูได้เฉพาะชื่อ วัน สถานที่ และกำหนดการ
+                            ไม่เห็นราคาหรือข้อมูลส่วนตัว
+                          </span>
                         </>
                       )}
                     </div>
