@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             งานของฉัน
           </a>
-          <a href="#trust">สำหรับเจ้าหน้าที่และทีมงาน</a>
+          {/* <a href="#trust">สำหรับเจ้าหน้าที่และทีมงาน</a> */}
         </nav>
 
         <div className="navbar-actions">
