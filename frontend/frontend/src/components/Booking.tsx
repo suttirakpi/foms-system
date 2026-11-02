@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { AuthUser } from "../App";
-import { AvailableDatePicker } from "./AvailableDatePicker";
+import { AvailableDatePicker, hallFree, useTempleAvailability } from "./AvailableDatePicker";
 import "./Booking.css";
 import { API_URL } from "../config";
 
@@ -103,7 +103,15 @@ export const Booking: React.FC<BookingProps> = ({
   }, []);
 
   const currentTemple = temples.find((t) => t._id === selectedTempleId);
-  const availableHalls = currentTemple ? currentTemple.halls : [];
+  const allHalls = currentTemple ? currentTemple.halls : [];
+  const { av, error: availError } = useTempleAvailability(selectedTempleId);
+  // เลือกวันแล้ว: ซ่อนศาลาที่เต็มในช่วงวันนั้น (ยังไม่เลือกวัน แสดงทุกศาลา)
+  const availableHalls = startDate ? allHalls.filter((h) => hallFree(av, h._id, startDate, nights)) : allHalls;
+  const hallIdsKey = availableHalls.map((h) => h._id).join(",");
+  useEffect(() => {
+    // ศาลาที่เลือกไว้ถูกซ่อน (เต็ม) ให้เลือกหลังแรกที่ว่างแทน
+    if (availableHalls.length > 0 && !availableHalls.some((h) => h._id === hall?._id)) setHall(availableHalls[0]);
+  }, [hallIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // อัปเดตศาลาเมื่อเปลี่ยนวัด
   const handleTempleChange = (templeId: string) => {
@@ -265,8 +273,9 @@ export const Booking: React.FC<BookingProps> = ({
                 <div className="input-group">
                   <label>วันที่เริ่มต้นพิธี (รดน้ำศพ/สวดคืนแรก)</label>
                   <AvailableDatePicker
-                    hallId={hall?._id ?? null}
-                    hallName={hall?.name.split(" (")[0]}
+                    availability={av}
+                    error={availError}
+                    hallIds={allHalls.map((h) => h._id)}
                     nights={nights}
                     value={startDate}
                     onChange={setStartDate}

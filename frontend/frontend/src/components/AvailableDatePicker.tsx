@@ -1,12 +1,55 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { API_URL } from "../config";
 
-// ปฏิทินเลือกวันเริ่มพิธี: วันที่ศาลาไม่ว่างครบทุกคืนที่ต้องใช้ (หรือเป็นวันที่ผ่านมาแล้ว) จะไม่แสดงให้เลือก
-// ผู้ใช้จึงไม่ต้องกดไล่หาวันว่างทีละวัน
+// ปฏิทินเลือกวันเริ่มพิธี: แสดงเฉพาะวันที่มีศาลาในวัดนั้นว่างครบทุกคืนที่ต้องใช้อย่างน้อย 1 หลัง
+// (วันที่ผ่านมาแล้วหรือทุกศาลาเต็มจะไม่แสดง) ผู้ใช้จึงไม่ต้องกดไล่หาวันว่างทีละวัน
+// พอเลือกวันแล้ว หน้าจองจะซ่อนศาลาที่เต็มในวันนั้นด้วย (ใช้ hallFree)
+
+export interface Availability {
+  byHall: Record<string, string[]>; // hallId -> วันที่ถูกจองแล้ว
+  minDate: string;
+  maxDate: string | null;
+}
+
+const addDaysStr = (s: string, n: number) => {
+  const [y, m, d] = s.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+};
+
+// ศาลานี้ว่างครบทุกคืน (เริ่ม ... เริ่ม+จำนวนคืน-1) หรือไม่
+export const hallFree = (av: Availability | null, hallId: string, date: string, nights: number) => {
+  if (!av) return true;
+  const taken = av.byHall[hallId];
+  if (!taken) return true;
+  for (let i = 0; i < nights; i++) if (taken.includes(addDaysStr(date, i))) return false;
+  return true;
+};
+
+// โหลดวันว่างของทุกศาลาในวัดที่เลือก
+export const useTempleAvailability = (templeId: string) => {
+  const [av, setAv] = useState<Availability | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!templeId) return;
+    let cancelled = false;
+    setAv(null);
+    setError("");
+    fetch(`${API_URL}/api/temples/${templeId}/availability`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load failed"))))
+      .then((d) => !cancelled && setAv(d))
+      .catch(() => !cancelled && setError("โหลดวันว่างไม่สำเร็จ"));
+    return () => {
+      cancelled = true;
+    };
+  }, [templeId]);
+  return { av, error };
+};
 
 interface Props {
-  hallId: string | null;
-  hallName?: string;
+  availability: Availability | null;
+  error?: string;
+  hallIds: string[]; // ศาลาทั้งหมดของวัดที่เลือก
   nights: number;
   value: string; // YYYY-MM-DD หรือ ""
   onChange: (date: string) => void;
@@ -17,59 +60,32 @@ const TH_DOW = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`; // m: 0-11
-const addDaysStr = (s: string, n: number) => {
-  const [y, m, d] = s.split("-").map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + n));
-  return iso(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
-};
 
-export const AvailableDatePicker: React.FC<Props> = ({ hallId, hallName, nights, value, onChange }) => {
-  const [booked, setBooked] = useState<Set<string>>(new Set());
-  const [minDate, setMinDate] = useState("");
-  const [maxDate, setMaxDate] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export const AvailableDatePicker: React.FC<Props> = ({ availability, error, hallIds, nights, value, onChange }) => {
   const [view, setView] = useState<{ y: number; m: number } | null>(null);
+  const minDate = availability?.minDate ?? "";
+  const maxDate = availability?.maxDate ?? null;
 
   useEffect(() => {
-    if (!hallId) return;
-    let cancelled = false;
-    setLoading(true);
-    setError("");
-    fetch(`${API_URL}/api/halls/${hallId}/booked-dates`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load failed"))))
-      .then((d) => {
-        if (cancelled) return;
-        setBooked(new Set<string>(d.booked || []));
-        setMinDate(d.minDate);
-        setMaxDate(d.maxDate || null);
-        setView((v) => v ?? { y: Number(d.minDate.slice(0, 4)), m: Number(d.minDate.slice(5, 7)) - 1 });
-      })
-      .catch(() => !cancelled && setError("โหลดวันว่างของศาลาไม่สำเร็จ"))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [hallId]);
+    if (availability) setView((v) => v ?? { y: Number(availability.minDate.slice(0, 4)), m: Number(availability.minDate.slice(5, 7)) - 1 });
+  }, [availability]);
 
-  // วันเริ่มจองได้ ก็ต่อเมื่อทุกคืนที่ใช้ (เริ่ม ... เริ่ม+จำนวนคืน-1) ว่าง และอยู่ในช่วงที่วัดเปิดรับจอง
+  // วันเริ่มจองได้ ก็ต่อเมื่ออยู่ในช่วงที่วัดเปิดรับจอง และมีศาลาอย่างน้อย 1 หลังว่างครบทุกคืน
   const canStart = useMemo(
     () => (date: string) => {
-      if (!minDate || date < minDate) return false;
+      if (!availability || date < minDate) return false;
       if (maxDate && date > maxDate) return false;
-      for (let i = 0; i < nights; i++) if (booked.has(addDaysStr(date, i))) return false;
-      return true;
+      return hallIds.some((id) => hallFree(availability, id, date, nights));
     },
-    [booked, minDate, maxDate, nights],
+    [availability, hallIds, minDate, maxDate, nights],
   );
 
-  // ถ้าวันที่เลือกไว้กลายเป็นไม่ว่าง (เปลี่ยนศาลา/จำนวนคืน) ให้ล้างค่า
+  // ถ้าวันที่เลือกไว้กลายเป็นไม่ว่าง (เปลี่ยนวัด/จำนวนคืน) ให้ล้างค่า
   useEffect(() => {
-    if (value && minDate && !canStart(value)) onChange("");
-  }, [value, minDate, canStart, onChange]);
+    if (value && availability && !canStart(value)) onChange("");
+  }, [value, availability, canStart, onChange]);
 
-  if (!hallId) return <p className="dp-note">กรุณาเลือกศาลาก่อน</p>;
-  if (!view) return <p className="dp-note">{error || (loading ? "กำลังโหลดวันว่าง..." : "")}</p>;
+  if (!view) return <p className="dp-note">{error || "กำลังโหลดวันว่าง..."}</p>;
 
   const { y, m } = view;
   const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
@@ -118,9 +134,9 @@ export const AvailableDatePicker: React.FC<Props> = ({ hallId, hallName, nights,
           );
         })}
       </div>
-      {availableCount === 0 && <p className="dp-note">เดือนนี้ไม่มีวันว่างครบ {nights} คืน ลองเดือนถัดไปหรือเลือกศาลาอื่น</p>}
+      {availableCount === 0 && <p className="dp-note">เดือนนี้ไม่มีวันว่างครบ {nights} คืน ลองเดือนถัดไป</p>}
       <p className="dp-note">
-        แสดงเฉพาะวันที่{hallName ? ` ${hallName}` : "ศาลานี้"}ว่างครบ {nights} คืน
+        แสดงเฉพาะวันที่มีศาลาว่างครบ {nights} คืน
         {value ? ` · เลือก: ${Number(value.slice(8))} ${TH_MONTHS[Number(value.slice(5, 7)) - 1]} ${Number(value.slice(0, 4)) + 543}` : ""}
       </p>
     </div>

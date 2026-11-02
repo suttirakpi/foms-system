@@ -85,6 +85,39 @@ router.get("/halls/:hallId/booked-dates", async (req, res) => {
   }
 });
 
+// 1.2 GET /api/temples/:templeId/availability?from=&to=
+// วันที่ถูกจองแล้วของ "ทุกศาลา" ในวัดนี้ (แยกตามศาลา) ให้หน้าจองซ่อนศาลาที่เต็มในวันที่ผู้ใช้เลือก
+router.get("/temples/:templeId/availability", async (req, res) => {
+  try {
+    const { templeId } = req.params;
+    if (!isId(templeId)) return bad(res, "รหัสวัดไม่ถูกต้อง");
+    const temple = await Temple.findById(templeId).lean();
+    if (!temple || temple.isActive === false) return res.status(404).json({ message: "ไม่พบวัด" });
+    const today = todayInBangkok();
+    const from = isValidDateStr(req.query.from) ? req.query.from : today;
+    const to = isValidDateStr(req.query.to) ? req.query.to : addDays(from, 400);
+    if (to < from || to > addDays(from, 800)) return bad(res, "ช่วงวันที่ไม่ถูกต้อง");
+
+    const hallIds = temple.halls.filter((h) => h.isActive !== false).map((h) => h._id);
+    const rows = await HallReservation.find({ hallId: { $in: hallIds }, date: { $gte: from, $lte: to } })
+      .select("hallId date")
+      .lean();
+    const byHall = {};
+    for (const id of hallIds) byHall[String(id)] = [];
+    for (const r of rows) byHall[String(r.hallId)].push(r.date);
+    for (const k of Object.keys(byHall)) byHall[k].sort();
+
+    const rules = await getRules(temple._id);
+    res.json({
+      byHall,
+      minDate: today,
+      maxDate: rules.ADVANCE_BOOKING_LIMIT_60 ? addDays(today, ADVANCE_BOOKING_DAYS) : null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "ดึงข้อมูลวันว่างไม่สำเร็จ", error: err.message });
+  }
+});
+
 // 2. POST /api/bookings - สร้างคำขอจอง (ต้องล็อกอินเป็นเจ้าภาพ)
 router.post("/bookings", protect, restrictTo("HOST"), async (req, res) => {
   try {
