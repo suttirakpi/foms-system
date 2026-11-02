@@ -61,6 +61,30 @@ router.get("/master-data", async (req, res) => {
   }
 });
 
+// 1.1 GET /api/halls/:hallId/booked-dates?from=YYYY-MM-DD&to=YYYY-MM-DD
+// วันที่ศาลานี้ถูกจองแล้ว (รวมคำขอที่รออนุมัติ) ให้หน้าจองซ่อนวันเหล่านั้น ผู้ใช้จะได้ไม่ต้องกดไล่หาวันว่าง
+router.get("/halls/:hallId/booked-dates", async (req, res) => {
+  try {
+    const { hallId } = req.params;
+    if (!isId(hallId)) return bad(res, "รหัสศาลาไม่ถูกต้อง");
+    const today = todayInBangkok();
+    const from = isValidDateStr(req.query.from) ? req.query.from : today;
+    const to = isValidDateStr(req.query.to) ? req.query.to : addDays(from, 400);
+    if (to < from || to > addDays(from, 800)) return bad(res, "ช่วงวันที่ไม่ถูกต้อง");
+
+    const temple = await Temple.findOne({ "halls._id": hallId }).select("_id").lean();
+    const rules = temple ? await getRules(temple._id) : {};
+    const booked = await HallReservation.find({ hallId, date: { $gte: from, $lte: to } }).distinct("date");
+    res.json({
+      booked: booked.sort(),
+      minDate: today,
+      maxDate: rules.ADVANCE_BOOKING_LIMIT_60 ? addDays(today, ADVANCE_BOOKING_DAYS) : null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "ดึงข้อมูลวันว่างไม่สำเร็จ", error: err.message });
+  }
+});
+
 // 2. POST /api/bookings - สร้างคำขอจอง (ต้องล็อกอินเป็นเจ้าภาพ)
 router.post("/bookings", protect, restrictTo("HOST"), async (req, res) => {
   try {

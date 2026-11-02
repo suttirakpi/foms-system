@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { AuthUser } from "../App";
+import { AvailableDatePicker } from "./AvailableDatePicker";
 import "./Booking.css";
 import { API_URL } from "../config";
 
@@ -263,11 +264,12 @@ export const Booking: React.FC<BookingProps> = ({
               <div className="input-row">
                 <div className="input-group">
                   <label>วันที่เริ่มต้นพิธี (รดน้ำศพ/สวดคืนแรก)</label>
-                  <input
-                    type="date"
-                    className="clean-input"
+                  <AvailableDatePicker
+                    hallId={hall?._id ?? null}
+                    hallName={hall?.name.split(" (")[0]}
+                    nights={nights}
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={setStartDate}
                   />
                 </div>
                 <div className="input-group">

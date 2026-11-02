@@ -454,3 +454,16 @@
   cursor: not-allowed;
   opacity: 0.8;
 }
+
+/* ปฏิทินเลือกวันเริ่มพิธี: แสดงเฉพาะวันที่ศาลาว่าง */
+.dp { border: 1px solid #e4ddcf; background: #fff; padding: 12px; max-width: 320px; }
+.dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.dp-head button { border: 1px solid #e4ddcf; background: #faf8f3; width: 30px; height: 30px; cursor: pointer; font-size: 18px; }
+.dp-head button:disabled { opacity: 0.3; cursor: default; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.dp-dow { font-size: 12px; color: #8a7f6a; padding: 4px 0; }
+.dp-day { border: 1px solid #e4ddcf; background: #faf8f3; padding: 8px 0; cursor: pointer; font: inherit; }
+.dp-day:hover { border-color: #b59a5b; }
+.dp-day.selected { background: #111; color: #fff; border-color: #111; }
+.dp-gone { visibility: hidden; }
+.dp-note { font-size: 12px; color: #8a7f6a; margin: 8px 0 0; }
