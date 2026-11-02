@@ -183,11 +183,15 @@ exports.uploadSlip = async (req, res) => {
     });
     if (dup) throw new AppError("DUPLICATE_SLIP", "สลิปนี้เคยถูกใช้แล้ว", 409);
 
-    await fs.mkdir(SLIP_DIR, { recursive: true });
+    // เก็บรูปลง DB (ไม่เขียนดิสก์) เพื่อให้เครื่องอื่นที่ใช้ DB เดียวกันดูสลิปได้
     const fileName = `${hash}${EXT[req.file.mimetype]}`;
-    await fs.writeFile(path.join(SLIP_DIR, fileName), req.file.buffer);
-
-    payment.slip = { path: fileName, hash, originalName: req.file.originalname };
+    payment.slip = {
+      path: fileName,
+      hash,
+      originalName: req.file.originalname,
+      contentType: req.file.mimetype,
+      data: req.file.buffer,
+    };
     payment.paidAmount = paidAmount;
     payment.paidAt = paidAt;
     payment.status = "PENDING";
@@ -217,7 +221,7 @@ exports.listPending = async (req, res) => {
 // ---------- 5) ดูรูปสลิป ----------
 exports.getSlip = async (req, res) => {
   try {
-    const payment = await Payment.findById(req.params.id).lean();
+    const payment = await Payment.findById(req.params.id).select("+slip.data");
     if (!payment || !payment.slip || !payment.slip.path)
       throw new AppError("SLIP_NOT_FOUND", "ไม่พบสลิป", 404);
 
@@ -225,6 +229,14 @@ exports.getSlip = async (req, res) => {
     if (!booking) throw new AppError("BOOKING_NOT_FOUND", "ไม่พบงาน", 404);
     assertAccess(req, booking);
 
+    // รูปที่เก็บใน DB (รุ่นใหม่) — ส่งออกได้จากทุกเครื่อง
+    if (payment.slip.data) {
+      res.set("Content-Type", payment.slip.contentType || "image/jpeg");
+      res.set("Cache-Control", "private, max-age=3600");
+      return res.send(payment.slip.data);
+    }
+
+    // สลิปรุ่นเก่าที่เก็บเป็นไฟล์บนดิสก์
     const filePath = path.join(SLIP_DIR, payment.slip.path);
     await fs.access(filePath); // ไฟล์หายจากดิสก์ → 404 ไม่ใช่ 500
     // ใช้ root แทน path เต็ม: sendFile ปฏิเสธ path เต็มที่มีโฟลเดอร์ขึ้นต้นด้วยจุด (เช่น D:\.vscode\...) ทำให้เครื่องที่วางโปรเจกต์ไว้ในโฟลเดอร์แบบนั้นได้ 404
