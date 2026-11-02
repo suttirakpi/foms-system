@@ -647,3 +647,17 @@
 .sched-note { margin: 8px 0 0; font-size: 12px; color: #777; }
 .booking-picker { margin: 8px 0 0; font-size: 13px; }
 .booking-picker select { margin-left: 8px; padding: 6px 8px; border: 1px solid #d6d3ca; }
+
+/* กล่องให้เจ้าภาพยืนยันขั้นตอนที่ทีมจัดงานติ๊กเสร็จ */
+.step-confirm { border: 1px solid #e4ddcf; background: #fff; padding: 14px 18px; margin: 16px 0; }
+.step-confirm.alert { border: 1.5px solid #b59a5b; background: #fffaf0; }
+.step-confirm-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.step-confirm-head small { color: #8a7f6a; font-weight: 400; }
+.step-confirm-all, .step-confirm-actions button { border: 1px solid #111; background: #fff; padding: 6px 14px; cursor: pointer; font: inherit; font-size: 13px; }
+.step-confirm-actions .ok, .step-confirm-all { background: #111; color: #fff; }
+.step-confirm-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.step-confirm button:disabled { opacity: 0.5; cursor: default; }
+.step-confirm-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px dashed #e4ddcf; }
+.step-confirm-row p { margin: 2px 0 0; font-size: 12px; color: #6b6354; }
+.step-confirm-row.disputed { color: #8a3b2d; }
+.step-confirm-msg { font-size: 12px; margin: 8px 0 0; color: #6b6354; }

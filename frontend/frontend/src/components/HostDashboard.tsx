@@ -4,6 +4,7 @@ import { AuthUser } from "../App";
 import "./HostDashboard.css";
 import { API_URL } from "../config";
 import { HostPayment } from "./HostPayment";
+import { HostStepConfirm } from "./HostStepConfirm";
 import { HostSchedule, HostScheduleItem, errMsg, hostFetch } from "../hostApi";
 
 interface HostDashboardProps {
@@ -401,6 +402,10 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({
                   <div className="step-desc">สรุปเอกสารปิดงาน</div>
                 </div>
               </div>
+
+              {["IN_PROGRESS", "COMPLETED"].includes(booking.status) && (
+                <HostStepConfirm bookingId={booking._id} onChanged={refreshBooking} />
+              )}
 
               <div className="status-warning-banner">
                 <span className="warning-icon">ⓘ</span> สถานะปัจจุบัน:{" "}

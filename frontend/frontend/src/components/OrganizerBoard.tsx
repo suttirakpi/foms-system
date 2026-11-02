@@ -137,6 +137,7 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({ currentUser, onN
   const activeNav = NAV.find((n) => n.key === nav)!;
 
   const selectJob = (id: string) => {
+    if (id === jobId) return; // เลือกงานเดิมซ้ำ: ไม่ต้องล้างกระดาน (ไม่งั้นกระดานว่างค้างเพราะไม่มีการโหลดใหม่)
     setJobId(id);
     setDate("");
     setBoard(null);
@@ -246,7 +247,8 @@ const LiveTab: React.FC<{
   const { steps, vendors, job } = board;
   const active = steps.find((s) => s.status === "active");
   const next = nextOf(steps);
-  const doneCount = steps.filter((s) => s.status === "done").length;
+  const doneCount = steps.filter((s) => s.status === "done").length; // เจ้าภาพยืนยันแล้ว = เสร็จจริง
+  const awaitingCount = steps.filter((s) => s.status === "review" || s.status === "disputed").length;
   const progress = steps.length ? Math.floor(((doneCount + (active ? 0.5 : 0)) / steps.length) * 100) : 0;
   const received = vendors.filter((v) => v.status === "RECEIVED").length;
   const quality = vendors.length ? Math.round((received / vendors.length) * 100) : 0;
@@ -342,7 +344,9 @@ const LiveTab: React.FC<{
               </div>
             </div>
           ) : (
-            <div className="org-active done-all">ดำเนินพิธีครบทุกขั้นตอนของวันนี้แล้ว</div>
+            <div className="org-active done-all">
+              {awaitingCount > 0 ? `ติ๊กครบทุกขั้นตอนของวันนี้แล้ว รอเจ้าภาพยืนยัน ${awaitingCount} ขั้นตอน` : "ดำเนินพิธีครบทุกขั้นตอนของวันนี้แล้ว (เจ้าภาพยืนยันครบ)"}
+            </div>
           )}
 
           <ol className="org-timeline">
@@ -350,20 +354,31 @@ const LiveTab: React.FC<{
               const st = s.status === "wait" && next && next.id === s.id ? "next" : s.status;
               return (
                 <li key={s.id} className={`org-step ${st}`}>
-                  <span className="marker">{s.status === "done" ? <IconCheck /> : s.status === "active" ? <i /> : pad(s.n)}</span>
+                  <span className="marker">{s.status === "done" ? <IconCheck /> : s.status === "active" ? <i /> : s.status === "review" ? "⏳" : s.status === "disputed" ? "!" : pad(s.n)}</span>
                   <div className="card">
                     <div className="row">
                       <span className="meta">STEP {pad(s.n)} · {s.time}{s.status === "active" && <em>กำลังดำเนินการ</em>}</span>
                       <span className={`tag ${st}`}>
                         {s.status === "done" && "เสร็จสิ้นแล้ว"}
                         {s.status === "active" && "ประจำหน้างาน"}
+                        {s.status === "review" && "รอเจ้าภาพยืนยัน"}
+                        {s.status === "disputed" && "เจ้าภาพแจ้งว่ายังไม่เสร็จ"}
                         {st === "next" && "รอเริ่ม (Queue Next)"}
                         {st === "wait" && "รอเริ่ม"}
                       </span>
                     </div>
                     <h4>{s.title}</h4>
                     {s.status === "done" ? (
-                      <p className="note"><IconHistory /> บันทึกยืนยันเมื่อ {hhmm(s.doneAt)} โดย {s.doneByName}</p>
+                      <p className="note"><IconHistory /> ทีมงานแจ้งเสร็จ {hhmm(s.doneAt)} โดย {s.doneByName} · เจ้าภาพยืนยันแล้ว {hhmm(s.confirmedAt)}</p>
+                    ) : s.status === "review" ? (
+                      <p className="note"><IconHistory /> แจ้งเสร็จเมื่อ {hhmm(s.doneAt)} โดย {s.doneByName} · รอเจ้าภาพกดยืนยันว่าเสร็จจริง</p>
+                    ) : s.status === "disputed" ? (
+                      <>
+                        <p className="note">เจ้าภาพแจ้งว่ายังไม่เสร็จ: {s.disputeNote}</p>
+                        <button className="org-btn-black" disabled={busy} onClick={() => complete(s)}>
+                          แก้ไขแล้ว แจ้งเสร็จอีกครั้ง <IconArrow />
+                        </button>
+                      </>
                     ) : (
                       <p>{s.desc}</p>
                     )}
@@ -615,8 +630,9 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
       try {
         await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status } });
       } catch (err) {
-        if (err instanceof ApiError && err.code === "VENDORS_PENDING") {
-          if (!window.confirm(`${err.message}\nปิดงานทั้งที่ยังตรวจรับไม่ครบหรือไม่?`)) return;
+        if (err instanceof ApiError && (err.code === "VENDORS_PENDING" || err.code === "STEPS_UNCONFIRMED")) {
+          const what = err.code === "STEPS_UNCONFIRMED" ? "ที่เจ้าภาพยังไม่ได้ยืนยัน" : "ที่ยังตรวจรับไม่ครบ";
+          if (!window.confirm(`${err.message}\nปิดงานทั้งที่${what}หรือไม่?`)) return;
           await opsFetch(`/ops/bookings/${job.id}/status`, { method: "PATCH", body: { status, force: true } });
         } else throw err;
       }
@@ -639,7 +655,7 @@ const SummaryTab: React.FC<{ board: OpsBoard; flash: (m: string, e?: boolean) =>
         <span className={`org-chip ${sum.job.status === "IN_PROGRESS" ? "warn" : ""}`}>{STATUS_LABEL[sum.job.status] || sum.job.status}</span>
       </div>
       <div className="org-sumgrid">
-        <div className="org-stat"><div className="org-stat-top"><span>ขั้นตอนพิธี</span></div><h3>{sum.steps.done} / {sum.steps.total}</h3><p>เสร็จ {pct}% ของที่เริ่มสร้างไว้</p></div>
+        <div className="org-stat"><div className="org-stat-top"><span>ขั้นตอนพิธี</span></div><h3>{sum.steps.done} / {sum.steps.total}</h3><p>เจ้าภาพยืนยันแล้ว {pct}%{sum.steps.awaitingHost > 0 ? ` · รอยืนยัน ${sum.steps.awaitingHost} ขั้น` : ""}</p></div>
         <div className="org-stat"><div className="org-stat-top"><span>ตรวจรับคู่ค้า</span></div><h3>{sum.vendors.received} / {sum.vendors.total}</h3><p>{sum.vendors.total - sum.vendors.received === 0 ? "ครบทุกรายการ" : `ค้าง ${sum.vendors.total - sum.vendors.received} รายการ`}</p></div>
         <div className="org-stat"><div className="org-stat-top"><span>บุคลากรที่จัดเข้าพิธี</span></div><h3>{sum.assignments}</h3><p>รายการจัดเวร</p></div>
       </div>

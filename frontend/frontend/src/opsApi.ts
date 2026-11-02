@@ -43,7 +43,7 @@ export interface OpsJob {
   tonight: number | "cremation" | null;
 }
 
-export type StepStatus = "wait" | "active" | "done";
+export type StepStatus = "wait" | "active" | "review" | "disputed" | "done";
 export interface OpsStep {
   id: string;
   n: number;
@@ -54,6 +54,9 @@ export interface OpsStep {
   status: StepStatus;
   doneByName: string;
   doneAt?: string;
+  confirmedByName?: string;
+  confirmedAt?: string;
+  disputeNote?: string;
 }
 
 export type VendorStatus = "SHIPPING" | "ARRIVED" | "RECEIVED";
@@ -85,7 +88,7 @@ export interface OpsBoard {
 export interface OpsSummary {
   job: OpsJob;
   nights: { date: string; kind: "CHANT" | "CREMATION"; stepsTotal: number; stepsDone: number }[];
-  steps: { total: number; done: number };
+  steps: { total: number; done: number; awaitingHost: number };
   vendors: { total: number; received: number };
   assignments: number;
   canStart: boolean;

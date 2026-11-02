@@ -11,6 +11,7 @@ const staffBookingRoutes = require("./routes/staffBookingRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const opsRoutes = require("./routes/opsRoutes");
+const hostStepRoutes = require("./routes/hostStepRoutes");
 const inviteRoutes = require("./routes/inviteRoutes");
 const { AppError } = require("./utils/pricing");
 
@@ -46,6 +47,7 @@ app.use("/api/staff", staffBookingRoutes);
 app.use("/api/staff", inventoryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ops", opsRoutes);
+app.use("/api", hostStepRoutes);
 app.use("/api", inviteRoutes);
 
 // Health Check Routes

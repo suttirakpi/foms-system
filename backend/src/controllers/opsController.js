@@ -126,7 +126,7 @@ async function buildSteps(booking, date) {
 // ---------------------------------------------------------------- กระดานรายคืน
 const stepDto = (s) => ({
   id: String(s._id), n: s.n, time: s.time, range: s.range, title: s.title, desc: s.desc, status: s.status,
-  doneByName: s.doneByName, doneAt: s.doneAt,
+  doneByName: s.doneByName, doneAt: s.doneAt, confirmedByName: s.confirmedByName, confirmedAt: s.confirmedAt, disputeNote: s.disputeNote,
 });
 const vendorDto = (v) => ({
   id: String(v._id), category: v.category, title: v.title, partner: v.partner, expectedTime: v.expectedTime,
@@ -184,17 +184,21 @@ exports.completeStep = wrap(async (req, res) => {
   if (!booking) return;
   if (!LIVE.includes(booking.status)) return res.status(409).json({ message: "งานนี้ปิดแล้วหรือยังไม่ได้รับอนุมัติ" });
 
+  // ติ๊กว่าเสร็จ → รอเจ้าภาพยืนยัน (review) ; ขั้นที่เจ้าภาพแจ้งว่ายังไม่เสร็จ (disputed) ติ๊กใหม่ได้
+  const wasActive = step.status === "active";
   const done = await RunStep.findOneAndUpdate(
-    { _id: step._id, status: "active" },
-    { status: "done", doneBy: req.user._id, doneByName: req.user.name, doneAt: new Date() },
+    { _id: step._id, status: { $in: ["active", "disputed"] } },
+    { status: "review", doneBy: req.user._id, doneByName: req.user.name, doneAt: new Date(), disputeNote: "" },
     { new: true },
   );
   if (!done) return res.status(409).json({ message: "ขั้นตอนนี้ไม่ได้อยู่ในสถานะกำลังดำเนินการ" });
-  await RunStep.findOneAndUpdate({ bookingId: step.bookingId, date: step.date, n: step.n + 1, status: "wait" }, { status: "active" });
+  if (wasActive)
+    await RunStep.findOneAndUpdate({ bookingId: step.bookingId, date: step.date, n: step.n + 1, status: "wait" }, { status: "active" });
   if (["CONFIRMED", "PAID"].includes(booking.status))
     await Booking.updateOne({ _id: booking._id, status: { $in: ["CONFIRMED", "PAID"] } }, { status: "IN_PROGRESS" });
   const steps = await RunStep.find({ bookingId: step.bookingId, date: step.date }).sort({ n: 1 }).lean();
-  res.json({ steps: steps.map(stepDto), allDone: steps.every((s) => s.status === "done") });
+  // allDone = ทีมจัดงานติ๊กครบทุกขั้นแล้ว (บางขั้นอาจยังรอเจ้าภาพยืนยัน)
+  res.json({ steps: steps.map(stepDto), allDone: steps.every((s) => ["review", "done"].includes(s.status)) });
 });
 
 // ---------------------------------------------------------------- คู่ค้า / ตรวจรับของ
@@ -322,7 +326,11 @@ exports.summary = wrap(async (req, res) => {
   }
   res.json({
     job: jobDto(booking), nights,
-    steps: { total: steps.length, done: steps.filter((s) => s.status === "done").length },
+    steps: {
+      total: steps.length,
+      done: steps.filter((s) => s.status === "done").length,
+      awaitingHost: steps.filter((s) => ["review", "disputed"].includes(s.status)).length,
+    },
     vendors: { total: vendors.length, received: vendors.filter((v) => v.status === "RECEIVED").length },
     assignments,
     canStart: ["CONFIRMED", "PAID"].includes(booking.status),
@@ -339,6 +347,9 @@ exports.setStatus = wrap(async (req, res) => {
   if (!from) return bad(res, "สถานะต้องเป็น IN_PROGRESS หรือ COMPLETED");
   if (next === "COMPLETED") {
     const pendingVendors = await VendorDelivery.countDocuments({ bookingId: booking._id, status: { $ne: "RECEIVED" } });
+    const unconfirmed = await RunStep.countDocuments({ bookingId: booking._id, status: { $in: ["review", "disputed"] } });
+    if (unconfirmed > 0 && !req.body.force)
+      return res.status(409).json({ code: "STEPS_UNCONFIRMED", count: unconfirmed, message: `ยังมีขั้นตอนที่เจ้าภาพไม่ได้ยืนยัน ${unconfirmed} รายการ` });
     if (pendingVendors > 0 && !req.body.force)
       return res.status(409).json({ code: "VENDORS_PENDING", count: pendingVendors, message: `ยังมีของที่ยังไม่ตรวจรับ ${pendingVendors} รายการ` });
   }

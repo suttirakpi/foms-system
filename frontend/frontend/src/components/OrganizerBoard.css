@@ -279,3 +279,10 @@
   .org-form-row { grid-template-columns: 1fr; }
   .org-pick select:first-of-type { min-width: 0; width: 100%; }
 }
+
+.org-step.review .card { border: 1.5px dashed var(--gold); background: #fffaf0; }
+.org-step.review .marker { border-color: var(--gold); }
+.org-step .tag.review { color: var(--gold); padding: 0; }
+.org-step.disputed .card { border: 1.5px solid #b5452d; background: #fff6f3; }
+.org-step.disputed .marker { border-color: #b5452d; color: #b5452d; }
+.org-step .tag.disputed { color: #b5452d; padding: 0; }
