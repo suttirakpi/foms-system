@@ -21,6 +21,7 @@ interface BookingProps {
 }
 
 interface HallData {
+  isActive?: boolean;
   _id: string;
   name: string;
   capacity: number;
@@ -391,7 +392,7 @@ export const Booking: React.FC<BookingProps> = ({
 
         if (data.temples?.length > 0) {
           setSelectedTempleId(data.temples[0]._id);
-          setHall(data.temples[0].halls?.[0] || null);
+          setHall((data.temples[0].halls || []).find((h: HallData) => h.isActive !== false) || null);
         }
         if (data.packages?.length > 0) {
           // เลือกแพ็กเกจมาตรฐานเป็นค่าเริ่มต้น
@@ -408,7 +409,8 @@ export const Booking: React.FC<BookingProps> = ({
   }, []);
 
   const currentTemple = temples.find((t) => t._id === selectedTempleId);
-  const allHalls = currentTemple ? currentTemple.halls : [];
+  // ศาลาที่แอดมินปิดใช้งาน (isActive=false) ไม่แสดงให้เลือก และไม่นับเป็นศาลาว่างในปฏิทิน
+  const allHalls = currentTemple ? currentTemple.halls.filter((h) => h.isActive !== false) : [];
   const { av, error: availError } = useTempleAvailability(selectedTempleId);
   // เลือกวันแล้ว: ซ่อนศาลาที่เต็มในช่วงวันนั้น (ยังไม่เลือกวัน แสดงทุกศาลา)
   const availableHalls = startDate
@@ -428,8 +430,9 @@ export const Booking: React.FC<BookingProps> = ({
   const handleTempleChange = (templeId: string) => {
     setSelectedTempleId(templeId);
     const foundTemple = temples.find((t) => t._id === templeId);
-    if (foundTemple && foundTemple.halls.length > 0) {
-      setHall(foundTemple.halls[0]);
+    const openHalls = foundTemple ? foundTemple.halls.filter((h) => h.isActive !== false) : [];
+    if (foundTemple && openHalls.length > 0) {
+      setHall(openHalls[0]);
     } else {
       setHall(null);
     }
