@@ -456,14 +456,487 @@
 }
 
 /* ปฏิทินเลือกวันเริ่มพิธี: แสดงเฉพาะวันที่ศาลาว่าง */
-.dp { border: 1px solid #e4ddcf; background: #fff; padding: 12px; max-width: 320px; }
-.dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.dp-head button { border: 1px solid #e4ddcf; background: #faf8f3; width: 30px; height: 30px; cursor: pointer; font-size: 18px; }
-.dp-head button:disabled { opacity: 0.3; cursor: default; }
-.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-.dp-dow { font-size: 12px; color: #8a7f6a; padding: 4px 0; }
-.dp-day { border: 1px solid #e4ddcf; background: #faf8f3; padding: 8px 0; cursor: pointer; font: inherit; }
-.dp-day:hover { border-color: #b59a5b; }
-.dp-day.selected { background: #111; color: #fff; border-color: #111; }
-.dp-gone { visibility: hidden; }
-.dp-note { font-size: 12px; color: #8a7f6a; margin: 8px 0 0; }
+.dp {
+  border: 1px solid #e4ddcf;
+  background: #fff;
+  padding: 12px;
+  max-width: 320px;
+}
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dp-head button {
+  border: 1px solid #e4ddcf;
+  background: #faf8f3;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 18px;
+}
+.dp-head button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.dp-dow {
+  font-size: 12px;
+  color: #8a7f6a;
+  padding: 4px 0;
+}
+.dp-day {
+  border: 1px solid #e4ddcf;
+  background: #faf8f3;
+  padding: 8px 0;
+  cursor: pointer;
+  font: inherit;
+}
+.dp-day:hover {
+  border-color: #b59a5b;
+}
+.dp-day.selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.dp-gone {
+  visibility: hidden;
+}
+.dp-note {
+  font-size: 12px;
+  color: #8a7f6a;
+  margin: 8px 0 0;
+}
+
+/* --- MCDA / Weighted Sum Method Recommendation Box --- */
+.mcda-box {
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #faf8f5;
+  border: 1px solid #d8cfc2;
+}
+
+.mcda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.mcda-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #735b25;
+  background-color: #efe9dc;
+  padding: 2px 8px;
+  margin-bottom: 4px;
+}
+
+.mcda-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--ink, #1f1e1b);
+}
+
+.mcda-formula {
+  font-size: 12px;
+  color: #735b25;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e2d9c8;
+  padding: 4px 10px;
+}
+
+.mcda-desc {
+  font-size: 13px;
+  color: var(--ink-soft, #5a574f);
+  margin: 0 0 1rem 0;
+}
+
+.mcda-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.mcda-slider-item {
+  background: #ffffff;
+  border: 1px solid #e6e1d6;
+  padding: 0.75rem 1rem;
+}
+
+.mcda-slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 0.5rem;
+  color: var(--ink, #1f1e1b);
+}
+
+.mcda-slider-label strong {
+  color: #735b25;
+}
+
+.mcda-recommendation-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background-color: #fffdf9;
+  border: 1px solid #735b25;
+  padding: 0.85rem 1.15rem;
+}
+
+.mcda-rec-text {
+  font-size: 14px;
+  color: #1f1e1b;
+}
+
+.mcda-rec-text strong {
+  color: #735b25;
+}
+
+.btn-apply-mcda {
+  background-color: #735b25;
+  color: #ffffff;
+  border: 1px solid #735b25;
+  padding: 0.45rem 0.9rem;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-apply-mcda:hover {
+  opacity: 0.9;
+}
+
+/* --- Hall Card Score & Badge --- */
+.hall-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hall-score-pill {
+  font-size: 11px;
+  color: #5a574f;
+  background-color: #f2efe9;
+  padding: 2px 7px;
+  border: 1px solid #e0d9ce;
+}
+
+.hall-rec-star {
+  font-size: 11px;
+  font-weight: 600;
+  color: #735b25;
+  background-color: #f7f1e3;
+  padding: 2px 7px;
+  border: 1px solid #d4c098;
+}
+
+.hall-card.recommended-hall {
+  border-color: #b59b60;
+}
+
+/* --- Wizard: แบ่งเป็นทีละขั้น + แถบปุ่มติดขอบล่าง --- */
+.stepper ol {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+.stepper-item {
+  flex: 1;
+}
+.stepper-item button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  border-top: 3px solid var(--gray-line);
+  padding: 0.6rem 0 0;
+  font-family: "Kanit", sans-serif;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+}
+.stepper-item button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.stepper-item.done button {
+  border-top-color: var(--gold);
+  color: var(--black);
+}
+.stepper-item.current button {
+  border-top-color: var(--black);
+  color: var(--black);
+  font-weight: 500;
+}
+.stepper-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.stepper-item.current .stepper-dot {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+.stepper-item.done .stepper-dot {
+  background: var(--gold);
+  color: var(--white);
+  border-color: var(--gold);
+}
+.stepper-count {
+  display: none;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 0.5rem;
+}
+
+.recap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: -1rem;
+}
+.recap-chip {
+  border: 1px solid var(--gray-line);
+  background: var(--white);
+  padding: 0.35rem 0.8rem;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: "Kanit", sans-serif;
+  color: var(--ink-soft);
+}
+.recap-chip b {
+  font-weight: 500;
+  color: var(--black);
+}
+.recap-chip:hover {
+  border-color: var(--gold);
+}
+
+.wizard-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: var(--white);
+  border-top: 1px solid var(--gray-line);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 2rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+.wizard-bar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+.wizard-hint {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #785f29;
+}
+.wizard-bar-total {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.wizard-bar-total span {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.wizard-bar-total strong {
+  font-size: 20px;
+  font-weight: 400;
+}
+.wizard-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+.btn-wizard-next,
+.btn-wizard-back {
+  min-height: 48px;
+  padding: 0 1.5rem;
+  font-family: "Kanit", sans-serif;
+  font-size: 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-wizard-next {
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+  font-weight: 500;
+}
+.btn-wizard-next:disabled {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn-wizard-back {
+  background: var(--white);
+  color: var(--black);
+  border: 1px solid var(--gray-line);
+}
+
+/* MCDA แบบกะทัดรัด: ปุ่มเลือกแนวทาง + ปรับละเอียดแบบพับเก็บ */
+.mcda-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.mcda-preset {
+  border: 1px solid #e0d9ce;
+  background: #fff;
+  padding: 0.6rem 0.5rem;
+  min-height: 44px;
+  font-family: "Kanit", sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.mcda-preset.active {
+  background: #735b25;
+  color: #fff;
+  border-color: #735b25;
+}
+.mcda-toggle {
+  background: none;
+  border: 0;
+  color: #735b25;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-bottom: 0.75rem;
+  text-decoration: underline;
+  font-family: inherit;
+}
+.pkg-card-form.recommended-hall {
+  border-color: #b59b60;
+}
+
+@media (max-width: 1024px) {
+  .booking-sidebar.hide-mobile {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  .booking-header {
+    padding: 1.25rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .booking-header-inner h1 {
+    font-size: 22px;
+  }
+  .booking-container {
+    padding: 0 1rem;
+    gap: 1.25rem;
+  }
+  .booking-main {
+    gap: 1.25rem;
+  }
+  .form-section {
+    padding: 1.25rem;
+  }
+  .stepper-label {
+    display: none;
+  }
+  .stepper-count {
+    display: block;
+  }
+  .mcda-presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .wizard-bar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .wizard-bar-actions {
+    flex: 1;
+  }
+  .wizard-bar-actions .btn-wizard-next {
+    flex: 1;
+  }
+}
+
+.ledger-empty {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* --- Sensitivity / What-If Insights --- */
+.whatif-box {
+  background: #faf8f5;
+  border: 1px solid #d8cfc2;
+  padding: 1rem 1.15rem;
+  border-radius: 2px;
+}
+.whatif-box h4 {
+  margin: 0 0 0.6rem 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #735b25;
+}
+.whatif-box ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.whatif-box li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--black);
+}
+.whatif-box strong {
+  color: #735b25;
+}
+.whatif-apply {
+  display: inline;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  color: #735b25;
+  text-decoration: underline;
+  cursor: pointer;
+}

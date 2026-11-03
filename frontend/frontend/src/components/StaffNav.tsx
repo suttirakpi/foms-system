@@ -60,41 +60,66 @@ export const StaffNav: React.FC<StaffNavProps> = ({
   ];
 
   return (
-    <nav className="staff-nav">
-      <div className="staff-nav-brand" onClick={onNavigateHome}>
-        <img src={logoImg} alt="FOMS" />
-        <div>
-          <strong>FOMS · TEMPLE STAFF PORTAL</strong>
-          <span>{templeName || "กำลังโหลดชื่อวัด..."}</span>
+    <header className="staff-navbar-wrapper">
+      <nav className="staff-nav">
+        {/* โลโก้ + ชื่อระบบ/วัด */}
+        <div className="staff-nav-brand" onClick={onNavigateHome}>
+          <img src={logoImg} alt="FOMS" className="staff-brand-logo-img" />
+          <div className="staff-brand-text">
+            <strong>FOMS · TEMPLE STAFF PORTAL</strong>
+            <span>{templeName || "กำลังโหลดชื่อวัด..."}</span>
+          </div>
         </div>
-      </div>
-      <ul className="staff-nav-menu">
-        {items.map((n) => (
-          <li
-            key={n.page}
-            className={n.page === active ? "active" : ""}
-            onClick={n.onClick}
+
+        {/* เมนูนำทางตรงกลาง (คงข้อความเดิมทั้งหมด) */}
+        <ul className="staff-nav-menu">
+          {items.map((n) => (
+            <li
+              key={n.page}
+              className={n.page === active ? "active" : ""}
+              onClick={n.onClick}
+            >
+              <span>{n.th}</span>
+              {n.en && <small>{n.en}</small>}
+            </li>
+          ))}
+        </ul>
+
+        {/* กล่องสถานะผู้ใช้และปุ่มออกจากระบบ (สไตล์เดียวกับ Navbar.tsx) */}
+        <div className="staff-nav-user">
+          <div className="staff-user-status-box">
+            <div className="staff-user-info">
+              <span className="staff-nav-status">บัญชีเจ้าหน้าที่วัด</span>
+              <strong>{userName ?? "เจ้าหน้าที่วัด"}</strong>
+              {templeName && (
+                <span className="staff-nav-role">{templeName}</span>
+              )}
+            </div>
+          </div>
+
+          <button
+            className="staff-nav-avatar"
+            title="ออกจากระบบ"
+            aria-label="ออกจากระบบ"
+            onClick={onLogout}
           >
-            {n.th}
-            <small>{n.en}</small>
-          </li>
-        ))}
-      </ul>
-      <div className="staff-nav-user">
-        <div>
-          <span className="staff-nav-status">บัญชีเจ้าหน้าที่วัด</span>
-          <strong>{userName ?? "เจ้าหน้าที่วัด"}</strong>
-          <span className="staff-nav-role">{templeName}</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
         </div>
-        <button
-          className="staff-nav-avatar"
-          title="ออกจากระบบ"
-          aria-label="ออกจากระบบ"
-          onClick={onLogout}
-        >
-          ⏻
-        </button>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 };

@@ -1,85 +1,169 @@
+.staff-navbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--paper, #faf9f6);
+  border-bottom: 1px solid var(--gray-line, #e6e4df);
+  width: 100%;
+}
+
 .staff-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  flex-wrap: wrap;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: 0.85rem 2rem;
+  box-sizing: border-box;
 }
 
+/* --- โลโก้ฝั่งซ้าย --- */
 .staff-nav-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   cursor: pointer;
 }
 
-.staff-nav-brand img {
-  height: 36px;
+.staff-brand-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
-.staff-nav-brand strong,
-.staff-nav-user strong {
+.staff-brand-text strong {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--black, #0b0b0b);
 }
 
-.staff-nav-brand span,
-.staff-nav-status,
-.staff-nav-role {
+.staff-brand-text span {
   display: block;
-  font-size: 10px;
-  color: var(--ink-soft);
+  font-size: 11px;
+  color: var(--ink-soft, #666666);
+  margin-top: 2px;
 }
 
-.staff-nav-status {
-  color: var(--gold);
-}
-
+/* --- เมนูตรงกลาง + เส้นใต้สีทองแบบ Navbar.tsx --- */
 .staff-nav-menu {
   display: flex;
+  align-items: center;
   gap: 2rem;
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 12px;
 }
 
 .staff-nav-menu li {
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid transparent;
-  color: var(--ink-soft);
+  position: relative;
+  padding-bottom: 6px;
+  font-size: 14px;
+  color: var(--ink-soft, #666666);
   cursor: pointer;
+  transition: color 0.3s ease;
+  text-align: center;
+  line-height: 1.3;
 }
 
 .staff-nav-menu li small {
   display: block;
   font-size: 10px;
+  color: var(--ink-soft, #666666);
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+.staff-nav-menu li::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: var(--gold, #b89a5e);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.staff-nav-menu li:hover,
+.staff-nav-menu li.active {
+  color: var(--black, #0b0b0b);
 }
 
 .staff-nav-menu li.active {
-  color: var(--black);
   font-weight: 500;
-  border-bottom-color: var(--gold);
 }
 
+.staff-nav-menu li:hover::after,
+.staff-nav-menu li.active::after {
+  width: 100%;
+}
+
+/* --- กล่องสถานะผู้ใช้และปุ่ม Logout ฝั่งขวา --- */
 .staff-nav-user {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
+}
+
+.staff-user-status-box {
+  background-color: var(--white, #ffffff);
+  border: 1px solid var(--gray-line, #e6e4df);
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
   text-align: right;
 }
 
-.staff-nav-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--black);
-  color: var(--white);
-  border: none;
-  cursor: pointer;
+.staff-user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
 }
 
+.staff-nav-status {
+  font-size: 10px;
+  color: #a47b38;
+  font-weight: 500;
+}
+
+.staff-user-info strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #003b5c;
+}
+
+.staff-nav-role {
+  font-size: 10px;
+  color: var(--ink-soft, #666666);
+}
+
+.staff-nav-avatar {
+  background-color: var(--black, #0b0b0b);
+  color: var(--white, #ffffff);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.staff-nav-avatar:hover {
+  background-color: var(--gold, #b89a5e);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1024px) {
+  .staff-nav {
+    flex-wrap: wrap;
+  }
+}
