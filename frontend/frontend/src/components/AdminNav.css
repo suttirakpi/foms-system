@@ -1,0 +1,23 @@
+.admin-nav-links {
+  gap: 1.75rem;
+}
+
+.admin-nav-links a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.3;
+  padding-bottom: 6px;
+}
+
+.admin-nav-links a small {
+  font-size: 10px;
+  color: var(--ink-soft, #666666);
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+.admin-nav-links a.active {
+  font-weight: 500;
+}
