@@ -24,7 +24,11 @@ const TABS: { key: MainTab; th: string; en: string }[] = [
   { key: "settings", th: "การตั้งค่าระบบ", en: "Settings" },
 ];
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onNavigateHome, onLogout }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  currentUser,
+  onNavigateHome,
+  onLogout,
+}) => {
   const [tab, setTab] = useState<MainTab>("overview");
   const { flash, node: toast } = useToast();
   const adminName = currentUser?.name ?? "ผู้ดูแลระบบ";
@@ -37,24 +41,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onN
       <header className="adm-top">
         <nav className="adm-tabs">
           {TABS.map((t) => (
-            <button key={t.key} className={`adm-tab ${tab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}>
+            <button
+              key={t.key}
+              className={`adm-tab ${tab === t.key ? "active" : ""}`}
+              onClick={() => setTab(t.key)}
+            >
               <span>{t.th}</span>
               <span>({t.en})</span>
             </button>
           ))}
         </nav>
         <div className="adm-top-right">
-          <div className="adm-portal">
+          {/* <div className="adm-portal">
             <span>SYSTEM</span>
-            <span><i className="adm-dot" />ADMIN</span>
+            <span>
+              <i className="adm-dot" />
+              ADMIN
+            </span>
             <span>PORTAL</span>
-          </div>
+          </div> */}
           <div className="adm-user">
             <strong>{adminName}</strong>
             <span>ผู้ดูแลระบบกลาง (Super Admin)</span>
           </div>
-          <button className="adm-logout" onClick={onLogout} title="ออกจากระบบ" aria-label="ออกจากระบบ">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button
+            className="adm-logout"
+            onClick={onLogout}
+            title="ออกจากระบบ"
+            aria-label="ออกจากระบบ"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
@@ -68,12 +93,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onN
           <span>/</span>
           <span>ผู้ดูแลระบบกลาง (SYSTEM ADMIN)</span>
           <span>/</span>
-          <strong>{activeTab.th} ({activeTab.en.toUpperCase()})</strong>
+          <strong>
+            {activeTab.th} ({activeTab.en.toUpperCase()})
+          </strong>
         </div>
 
-        {tab === "overview" && <AdminOverview onOpenAudit={() => setTab("audit")} />}
-        {tab === "master" && <AdminMaster adminName={adminName} flash={flash} onOpenAudit={() => setTab("audit")} />}
-        {tab === "access" && <AdminAccess currentUserId={adminId} flash={flash} />}
+        {tab === "overview" && (
+          <AdminOverview onOpenAudit={() => setTab("audit")} />
+        )}
+        {tab === "master" && (
+          <AdminMaster
+            adminName={adminName}
+            flash={flash}
+            onOpenAudit={() => setTab("audit")}
+          />
+        )}
+        {tab === "access" && (
+          <AdminAccess currentUserId={adminId} flash={flash} />
+        )}
         {tab === "audit" && <AdminAudit />}
         {tab === "settings" && <AdminSettings flash={flash} />}
       </main>
@@ -84,16 +121,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onN
       <footer className="adm-footer">
         <div className="adm-footer-row">
           <div>
-            <h4>FOMS <span>|</span> สถาปัตยกรรมระบบบริหารจัดการงานพิธีและศาสนสมบัติ</h4>
+            <h4>
+              FOMS <span>|</span>{" "}
+              สถาปัตยกรรมระบบบริหารจัดการงานพิธีและศาสนสมบัติ
+            </h4>
             <p>
-              ระบบปฏิบัติการกลางสำหรับการกำกับดูแล ธรรมาภิบาล และการบริหารจัดการข้อมูลของศาสนสถาน
+              ระบบปฏิบัติการกลางสำหรับการกำกับดูแล ธรรมาภิบาล
+              และการบริหารจัดการข้อมูลของศาสนสถาน
               ภายใต้การควบคุมและรักษาความปลอดภัยของสำนักงานศาสนสมบัติส่วนกลาง
             </p>
           </div>
         </div>
         <div className="adm-footer-bottom">
-          <span>© 2025 FOMS Ceremonial Governance &amp; Audit Compliance. สงวนลิขสิทธิ์ตามพระราชบัญญัติข้อมูลข่าวสาร</span>
-          <span>นโยบายความปลอดภัยสารสนเทศ &nbsp;·&nbsp; ข้อกำหนดการใช้งานและจริยธรรมข้อมูล</span>
+          <span>
+            © 2025 FOMS Ceremonial Governance &amp; Audit Compliance.
+            สงวนลิขสิทธิ์ตามพระราชบัญญัติข้อมูลข่าวสาร
+          </span>
+          <span>
+            นโยบายความปลอดภัยสารสนเทศ &nbsp;·&nbsp;
+            ข้อกำหนดการใช้งานและจริยธรรมข้อมูล
+          </span>
         </div>
       </footer>
     </div>
