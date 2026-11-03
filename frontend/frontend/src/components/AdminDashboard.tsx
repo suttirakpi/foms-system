@@ -49,7 +49,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {tab === "overview" && (
-          <AdminOverview onOpenAudit={() => setTab("audit")} />
+          <AdminOverview onOpenAudit={() => setTab("audit")} flash={flash} />
         )}
         {tab === "master" && (
           <AdminMaster

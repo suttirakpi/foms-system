@@ -60,32 +60,16 @@ const IconCheck = ({ size = 14 }: { size?: number }) => (
     <path d="M20 6 9 17l-5-5" />
   </Svg>
 );
-const IconHistory = () => (
-  <Svg size={14}>
-    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-    <path d="M3 3v5h5" />
-    <path d="M12 7v5l4 2" />
-  </Svg>
-);
-const IconShield = ({ size = 18 }: { size?: number }) => (
-  <Svg size={size}>
-    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-    <path d="m9 12 2 2 4-4" />
-  </Svg>
-);
 const IconArrow = () => (
   <Svg size={18}>
     <path d="M5 12h14" />
     <path d="m12 5 7 7-7 7" />
   </Svg>
 );
-const IconChecklist = () => (
-  <Svg size={18}>
-    <path d="m3 17 2 2 4-4" />
-    <path d="m3 7 2 2 4-4" />
-    <path d="M13 6h8" />
-    <path d="M13 12h8" />
-    <path d="M13 18h8" />
+const IconRefresh = () => (
+  <Svg size={16}>
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
   </Svg>
 );
 
@@ -144,6 +128,20 @@ const tonightLabel = (j: OpsJob) =>
       ? `คืนที่ ${j.tonight} จาก ${j.nights}`
       : "ยังไม่ถึง/พ้นวันพิธี";
 
+// นาฬิกาแยกเป็นคอมโพเนนต์ของตัวเอง ไม่ให้ทั้งกระดานรีเรนเดอร์ทุกวินาที
+const Clock: React.FC = () => {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 10000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <span className="org-clock">
+      {pad(now.getHours())}:{pad(now.getMinutes())} น.
+    </span>
+  );
+};
+
 export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
   currentUser,
   onNavigateHome,
@@ -156,7 +154,6 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
   const [board, setBoard] = useState<OpsBoard | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(new Date());
   const [toast, setToast] = useState<{ text: string; err: boolean } | null>(
     null,
   );
@@ -168,10 +165,6 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
     toastTimer.current = window.setTimeout(() => setToast(null), 4000);
   }, []);
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const organizerName = currentUser?.name ?? "ผู้ประสานงาน";
 
@@ -244,16 +237,6 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
       />
 
       <main className="org-main">
-        <div className="org-crumb">
-          <button onClick={onNavigateHome}>หน้าหลัก</button>
-          <span>/</span>
-          <span>ทีมปฏิบัติการหน้างาน (ORGANIZER)</span>
-          <span>/</span>
-          <strong>
-            {nav === "live" ? "กระดานบริหารพิธีการหน้างาน" : activeNav.th}
-          </strong>
-        </div>
-
         {jobs === null ? (
           <div className="org-placeholder">กำลังโหลดรายการงาน...</div>
         ) : jobs.length === 0 ? (
@@ -263,22 +246,49 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
           </div>
         ) : (
           <>
-            <div className="org-pick">
-              <label>
-                งานที่รับผิดชอบ
-                <select
-                  value={jobId}
-                  onChange={(e) => selectJob(e.target.value)}
-                >
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.bookingRef} · {j.deceasedName} · {j.hallName}{" "}
-                      {j.tonight !== null ? "(พิธีวันนี้)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {board && (
+            <header className="org-head">
+              <div>
+                <span className="org-kicker">{activeNav.th}</span>
+                <h1>{job?.deceasedName}</h1>
+                {job && (
+                  <p>
+                    {job.bookingRef} · {job.hallName} · {job.templeName} ·
+                    เจ้าภาพ {job.hostName}
+                  </p>
+                )}
+              </div>
+              <div className="org-head-side">
+                <Clock />
+                {job && (
+                  <span
+                    className={`org-chip ${
+                      job.status === "IN_PROGRESS" ? "warn" : ""
+                    }`}
+                  >
+                    {STATUS_LABEL[job.status] || job.status}
+                  </span>
+                )}
+              </div>
+            </header>
+
+            <div className="org-toolbar">
+              {jobs.length > 1 && (
+                <label>
+                  งาน
+                  <select
+                    value={jobId}
+                    onChange={(e) => selectJob(e.target.value)}
+                  >
+                    {jobs.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.bookingRef} · {j.deceasedName} · {j.hallName}{" "}
+                        {j.tonight !== null ? "(พิธีวันนี้)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {nav === "live" && board && (
                 <label>
                   วันที่ปฏิบัติงาน
                   <select
@@ -294,23 +304,17 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
                   </select>
                 </label>
               )}
-              {job && (
-                <span
-                  className={`org-chip ${
-                    job.status === "IN_PROGRESS" ? "warn" : ""
-                  }`}
-                >
-                  {STATUS_LABEL[job.status] || job.status}
-                </span>
-              )}
               <button
-                className="org-ghost"
+                type="button"
+                className="org-icon-btn"
+                title="โหลดใหม่"
+                aria-label="โหลดใหม่"
                 onClick={() => {
                   loadJobs();
                   loadBoard();
                 }}
               >
-                โหลดใหม่
+                <IconRefresh />
               </button>
             </div>
 
@@ -320,15 +324,7 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
             ) : (
               <>
                 {nav === "live" && (
-                  <LiveTab
-                    board={board}
-                    now={now}
-                    busy={busy}
-                    organizerName={organizerName}
-                    act={act}
-                    reload={loadBoard}
-                    flash={flash}
-                  />
+                  <LiveTab board={board} busy={busy} act={act} flash={flash} />
                 )}
                 {nav === "vendors" && (
                   <VendorsTab board={board} busy={busy} act={act} />
@@ -359,29 +355,11 @@ export const OrganizerBoard: React.FC<OrganizerBoardProps> = ({
       )}
 
       <footer className="org-footer">
-        <div className="cols">
-          <div>
-            <b className="t">หน่วยงานบริหารและควบคุมพิธีการส่วนกลาง</b>
-            <p>
-              FOMS On-Site Terminal —
-              บันทึกและควบคุมข้อมูลพิธีการเฉพาะพื้นที่จริงเพื่อความโปร่งใส
-            </p>
-          </div>
-          <div>
-            <b className="t gold">ระบบรักษาความปลอดภัยและการตรวจสอบ</b>
-            <p>
-              ทุกการติ๊กขั้นตอนและการตรวจรับของถูกบันทึกพร้อมชื่อผู้ดำเนินการและเวลา
-              ย้อนสถานะไม่ได้
-            </p>
-          </div>
-        </div>
-        <div className="bottom">
-          <span>
-            © 2025 FOMS. Ceremonial Protocol &amp; Funeral Operations
-            Management. All rights reserved.
-          </span>
-          <b>CEREMONIAL TERMINAL NODE #01</b>
-        </div>
+        <span>
+          ทุกการติ๊กขั้นตอนและการตรวจรับของถูกบันทึกพร้อมชื่อผู้ดำเนินการและเวลา
+          ย้อนสถานะไม่ได้
+        </span>
+        <span>© 2025 FOMS</span>
       </footer>
     </div>
   );
@@ -392,13 +370,10 @@ type Act = (fn: () => Promise<unknown>, okMsg?: string) => Promise<void>;
 /* =========================================================== หน้างานวันนี้ */
 const LiveTab: React.FC<{
   board: OpsBoard;
-  now: Date;
   busy: boolean;
-  organizerName: string;
   act: Act;
-  reload: () => void;
   flash: (m: string, e?: boolean) => void;
-}> = ({ board, now, busy, act, flash }) => {
+}> = ({ board, busy, act, flash }) => {
   const { steps, vendors, job } = board;
   const active = steps.find((s) => s.status === "active");
   const next = nextOf(steps);
@@ -409,13 +384,16 @@ const LiveTab: React.FC<{
   const progress = steps.length
     ? Math.floor(((doneCount + (active ? 0.5 : 0)) / steps.length) * 100)
     : 0;
-  const received = vendors.filter((v) => v.status === "RECEIVED").length;
-  const quality = vendors.length
-    ? Math.round((received / vendors.length) * 100)
-    : 0;
+  const pending = vendors.filter((v) => v.status !== "RECEIVED");
+  const receivedList = vendors.filter((v) => v.status === "RECEIVED");
   const arrived = vendors.filter((v) => v.status === "ARRIVED").length;
   const kindLabel =
     board.dateKind === "CREMATION" ? "พิธีฌาปนกิจ" : "สวดพระอภิธรรม";
+  const timeRange = steps.length
+    ? `${steps[0].time.replace(" น.", "")} – ${
+        steps[steps.length - 1].range.split("– ")[1] || ""
+      }`
+    : "—";
 
   const init = () =>
     act(
@@ -446,154 +424,75 @@ const LiveTab: React.FC<{
 
   return (
     <>
-      <div className="org-eyebrow">
-        <i />
-        CEREMONIAL TERMINAL · {job.hallName} · {job.templeName}
-      </div>
-      <section className="org-hero">
-        <div>
-          <h1>
-            กระดานบริหารงานพิธีการหน้างาน{" "}
-            <small>(Organizer Operations Board)</small>
-          </h1>
-          <p>
-            งาน {job.bookingRef} · {job.deceasedName} · เจ้าภาพ {job.hostName} ·
-            ระบบควบคุมลำดับพิธีการ ติ๊กเสร็จทีละขั้น และตรวจรับของจากคู่ค้า
-            ทุกการกดถูกบันทึกพร้อมชื่อผู้ดำเนินการ
-          </p>
+      <section className="org-metrics" aria-label="สรุปสถานะงานวันนี้">
+        <div className="org-metric">
+          <small>ความคืบหน้าวันนี้</small>
+          <b>{progress}%</b>
+          <div
+            className="org-meter"
+            role="progressbar"
+            aria-label="ความคืบหน้าวันนี้"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <i style={{ width: `${progress}%` }} />
+          </div>
         </div>
-        <div className="org-live">
-          <b>
-            <i />
-            ระบบเชื่อมต่อสด
-          </b>
+        <div className="org-metric">
+          <small>{kindLabel}</small>
+          <b>{timeRange}</b>
           <span>
-            {pad(now.getHours())}:{pad(now.getMinutes())}:
-            {pad(now.getSeconds())} น. · {thDate(board.date)}
+            {board.dateKind === "CHANT"
+              ? tonightLabel(job)
+              : thDate(board.date)}
           </span>
         </div>
-      </section>
-
-      <section className="org-stats">
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span className="no">01</span>
-            <span>สถานะงาน</span>
-          </div>
-          <h3>
-            {kindLabel}{" "}
-            {board.dateKind === "CHANT" ? `(${tonightLabel(job)})` : ""}
-          </h3>
-          <p>
-            {active
-              ? active.title
-              : steps.length
-                ? "ดำเนินพิธีครบทุกขั้นตอนแล้ว"
-                : "ยังไม่ได้เริ่มงานของวันนี้"}
-          </p>
-          <div className="org-stat-foot">
-            <span>สถานะ</span>
-            <b className="gold">{STATUS_LABEL[job.status] || job.status}</b>
-          </div>
-        </div>
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span className="no">02</span>
-            <span>กำหนดเวลาหลัก</span>
-          </div>
-          <h3>
-            {steps.length
-              ? `${steps[0].time.replace(" น.", "")} – ${
-                  steps[steps.length - 1].range.split("– ")[1] || ""
-                }`
-              : "—"}
-          </h3>
-          <p>
-            {next
-              ? `คิวถัดไป: ${next.time} ${next.title.slice(0, 40)}`
-              : active
-                ? "กำลังดำเนินขั้นสุดท้าย"
-                : "—"}
-          </p>
-          <div className="org-stat-foot">
-            <span>ความคืบหน้ารวม</span>
-            <b>{progress}%</b>
-          </div>
-        </div>
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span className="no">03</span>
-            <span>ตรวจรับคู่ค้า</span>
-          </div>
-          <h3>
-            {received} / {vendors.length} รายการครบถ้วน
-          </h3>
-          <p>
+        <div className="org-metric">
+          <small>ตรวจรับของ</small>
+          <b>
+            {receivedList.length}/{vendors.length}
+          </b>
+          <span>
             {vendors.length === 0
-              ? "ยังไม่มีรายการตรวจรับ (เพิ่มได้ในแท็บคู่ค้า)"
+              ? "ยังไม่มีรายการ"
               : arrived > 0
-                ? `มีของถึงลานจอดแล้ว ${arrived} รายการ รอตรวจรับ`
-                : received === vendors.length
-                  ? "ตรวจรับครบทุกรายการ"
+                ? `ของถึงแล้ว ${arrived} รายการ รอตรวจรับ`
+                : receivedList.length === vendors.length
+                  ? "ครบทุกรายการ"
                   : "รอส่งมอบ"}
-          </p>
-          <div className="org-stat-foot">
-            <span>ตรวจคุณภาพแล้ว</span>
-            <b className="gold">{quality}%</b>
-          </div>
+          </span>
         </div>
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span className="no">04</span>
-            <span>แขกผู้ร่วมงาน</span>
-          </div>
-          <h3>ประมาณ {job.guests} ท่าน</h3>
-          <p>{job.hallName}</p>
-          <div className="org-stat-foot">
-            <span>แพ็กเกจ</span>
-            <b>{job.packageName}</b>
-          </div>
+        <div className="org-metric">
+          <small>แขกผู้ร่วมงาน</small>
+          <b>~{job.guests} ท่าน</b>
+          <span>{job.packageName}</span>
         </div>
       </section>
 
       <div className="org-cols">
         <section className="org-queue">
           <div className="org-sec-head">
-            <div>
-              <small>คิวพิธีการประจำวัน {thDate(board.date)}</small>
-              <h2>Live Ceremonial Run-Queue</h2>
-            </div>
-            <span className={`org-chip ${active ? "warn" : ""}`}>
-              {active ? (
-                <>
-                  <i />
-                  กำลังดำเนินงาน (In Progress)
-                </>
-              ) : steps.length ? (
-                "เสร็จสิ้นครบทุกขั้น"
-              ) : (
-                "ยังไม่เริ่ม"
-              )}
-            </span>
+            <h2 className="org-h2">คิวพิธี {thDate(board.date)}</h2>
+            {steps.length > 0 && (
+              <span className="org-count">
+                เสร็จ {doneCount}/{steps.length} ขั้น
+              </span>
+            )}
           </div>
 
           {steps.length === 0 ? (
-            <div className="org-active">
-              <h3>ยังไม่ได้เริ่มงานของวันที่ {thDate(board.date)}</h3>
+            <div className="org-focus">
+              <span className="org-label">ยังไม่ได้เริ่มงานของวันนี้</span>
+              <h3>เริ่มงานวันที่ {thDate(board.date)}</h3>
               <p>
-                กด "เริ่มงานวันนี้" เพื่อสร้างคิวพิธี{" "}
+                ระบบจะสร้างคิว
                 {board.dateKind === "CREMATION"
                   ? "วันฌาปนกิจ (5 ขั้นตอน)"
                   : "คืนสวดพระอภิธรรม (7 ขั้นตอน)"}{" "}
                 จากเวลาเริ่มพิธีที่วัดตั้งไว้
               </p>
-              <div className="org-active-foot">
-                <span>
-                  <IconShield />{" "}
-                  {board.live
-                    ? "งานได้รับอนุมัติแล้ว พร้อมเริ่ม"
-                    : "งานนี้ปิดหรือยังไม่ได้รับอนุมัติ เริ่มงานไม่ได้"}
-                </span>
+              <div className="org-focus-act">
                 <button
                   className="org-btn-black"
                   disabled={!board.live || busy}
@@ -601,109 +500,103 @@ const LiveTab: React.FC<{
                 >
                   เริ่มงานวันนี้ <IconArrow />
                 </button>
+                {!board.live && (
+                  <span className="org-hint">
+                    งานนี้ปิดหรือยังไม่ได้รับอนุมัติ เริ่มงานไม่ได้
+                  </span>
+                )}
               </div>
             </div>
           ) : active ? (
-            <div className="org-active">
-              <div className="org-active-top">
-                <span>
-                  <em>คิวปัจจุบัน · ACTIVE STEP {pad(active.n)}</em>{" "}
-                  {active.range}
-                </span>
-                <span className="coord">
-                  ผู้ประสานงาน: {job.hostName ? "ทีมจัดงาน" : ""}
-                </span>
-              </div>
+            <div className="org-focus">
+              <span className="org-label">
+                ขั้นที่ {active.n} จาก {steps.length} · {active.range}
+              </span>
               <h3>{active.title}</h3>
               <p>{active.desc}</p>
-              <div className="org-active-foot">
-                <span>
-                  <IconShield /> ขั้นที่ {active.n} จาก {steps.length}
-                </span>
+              <div className="org-focus-act">
                 <button
                   className="org-btn-black"
                   disabled={busy}
                   onClick={() => complete(active)}
                 >
-                  {next
-                    ? "ติ๊กเสร็จ ไปคิวถัดไป (Next Queue)"
-                    : "ติ๊กเสร็จ ปิดขั้นสุดท้าย"}{" "}
+                  {next ? "ติ๊กเสร็จ ไปคิวถัดไป" : "ติ๊กเสร็จ ปิดขั้นสุดท้าย"}{" "}
                   <IconArrow />
                 </button>
+                {next && (
+                  <span className="org-hint">
+                    ถัดไป: {next.time} {next.title}
+                  </span>
+                )}
               </div>
             </div>
           ) : (
-            <div className="org-active done-all">
+            <div className="org-focus done">
               {awaitingCount > 0
                 ? `ติ๊กครบทุกขั้นตอนของวันนี้แล้ว รอเจ้าภาพยืนยัน ${awaitingCount} ขั้นตอน`
                 : "ดำเนินพิธีครบทุกขั้นตอนของวันนี้แล้ว (เจ้าภาพยืนยันครบ)"}
             </div>
           )}
 
-          <ol className="org-timeline">
+          <ol className="org-steps">
             {steps.map((s) => {
               const st =
                 s.status === "wait" && next && next.id === s.id
                   ? "next"
                   : s.status;
               return (
-                <li key={s.id} className={`org-step ${st}`}>
-                  <span className="marker">
+                <li key={s.id} className={`org-row ${st}`}>
+                  <span className="mk" aria-hidden="true">
                     {s.status === "done" ? (
                       <IconCheck />
                     ) : s.status === "active" ? (
                       <i />
                     ) : s.status === "review" ? (
-                      "⏳"
+                      "…"
                     ) : s.status === "disputed" ? (
                       "!"
                     ) : (
                       pad(s.n)
                     )}
                   </span>
-                  <div className="card">
-                    <div className="row">
-                      <span className="meta">
-                        STEP {pad(s.n)} · {s.time}
-                        {s.status === "active" && <em>กำลังดำเนินการ</em>}
-                      </span>
-                      <span className={`tag ${st}`}>
-                        {s.status === "done" && "เสร็จสิ้นแล้ว"}
-                        {s.status === "active" && "ประจำหน้างาน"}
-                        {s.status === "review" && "รอเจ้าภาพยืนยัน"}
-                        {s.status === "disputed" && "เจ้าภาพแจ้งว่ายังไม่เสร็จ"}
-                        {st === "next" && "รอเริ่ม (Queue Next)"}
-                        {st === "wait" && "รอเริ่ม"}
-                      </span>
+                  <div className="body">
+                    <div className="line">
+                      <span className="t">{s.time}</span>
+                      <span className="ttl">{s.title}</span>
                     </div>
-                    <h4>{s.title}</h4>
-                    {s.status === "done" ? (
+                    {s.status === "done" && (
                       <p className="note">
-                        <IconHistory /> ทีมงานแจ้งเสร็จ {hhmm(s.doneAt)} โดย{" "}
-                        {s.doneByName} · เจ้าภาพยืนยันแล้ว {hhmm(s.confirmedAt)}
+                        แจ้งเสร็จ {hhmm(s.doneAt)} โดย {s.doneByName} ·
+                        เจ้าภาพยืนยัน {hhmm(s.confirmedAt)}
                       </p>
-                    ) : s.status === "review" ? (
+                    )}
+                    {s.status === "review" && (
                       <p className="note">
-                        <IconHistory /> แจ้งเสร็จเมื่อ {hhmm(s.doneAt)} โดย{" "}
-                        {s.doneByName} · รอเจ้าภาพกดยืนยันว่าเสร็จจริง
+                        แจ้งเสร็จ {hhmm(s.doneAt)} โดย {s.doneByName} ·
+                        รอเจ้าภาพกดยืนยันว่าเสร็จจริง
                       </p>
-                    ) : s.status === "disputed" ? (
+                    )}
+                    {s.status === "disputed" && (
                       <>
                         <p className="note">
                           เจ้าภาพแจ้งว่ายังไม่เสร็จ: {s.disputeNote}
                         </p>
                         <button
-                          className="org-btn-black"
+                          className="org-btn-black sm"
                           disabled={busy}
                           onClick={() => complete(s)}
                         >
-                          แก้ไขแล้ว แจ้งเสร็จอีกครั้ง <IconArrow />
+                          แก้ไขแล้ว แจ้งเสร็จอีกครั้ง
                         </button>
                       </>
-                    ) : (
-                      <p>{s.desc}</p>
                     )}
                   </div>
+                  <span className="state">
+                    {s.status === "active" && "กำลังดำเนินการ"}
+                    {s.status === "review" && "รอยืนยัน"}
+                    {s.status === "disputed" && "ต้องแก้ไข"}
+                    {st === "next" && "ถัดไป"}
+                  </span>
                 </li>
               );
             })}
@@ -712,70 +605,58 @@ const LiveTab: React.FC<{
 
         <section className="org-vendors">
           <div className="org-sec-head">
-            <div>
-              <small>การตรวจรับของหน้างาน</small>
-              <h2>On-site Vendor Inspection</h2>
-            </div>
-            <span className="org-chip">{vendors.length} รายการ</span>
+            <h2 className="org-h2">รับของจากคู่ค้า</h2>
+            <span className="org-count">
+              รับแล้ว {receivedList.length}/{vendors.length}
+            </span>
           </div>
           {vendors.length === 0 && (
             <div className="org-empty">
-              ยังไม่มีรายการตรวจรับ ไปที่แท็บ "ตรวจสอบคู่ค้า & พัสดุ"
-              เพื่อเพิ่มหรือสร้างจากตัวเลือกที่เจ้าภาพเลือก
+              ยังไม่มีรายการ ไปที่แท็บ "ตรวจสอบคู่ค้า & พัสดุ" เพื่อเพิ่ม
             </div>
           )}
-          {vendors.map((v) => (
+          {pending.map((v) => (
             <VendorCard key={v.id} v={v} busy={busy} onStep={vendorStep} />
           ))}
+          {receivedList.length > 0 && (
+            <ul className="org-donelist">
+              {receivedList.map((v) => (
+                <VendorDone key={v.id} v={v} />
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </>
   );
 };
 
+// การ์ดของที่ยังรอตรวจรับ: ข้อมูลสำคัญ 1 บรรทัด + ปุ่มลงมือทำ
 const VendorCard: React.FC<{
   v: OpsVendor;
   busy: boolean;
   onStep: (v: OpsVendor, s: VendorStatus) => void;
-}> = ({ v, busy, onStep }) => (
-  <article className={`org-vcard ${v.status === "ARRIVED" ? "urgent" : ""}`}>
-    <div className="row">
-      <small>{v.category}</small>
-      {v.status === "RECEIVED" && (
-        <span className="org-badge black">
-          ตรวจรับสมบูรณ์ <IconCheck size={12} />
-        </span>
-      )}
-      {v.status === "ARRIVED" && (
-        <span className="org-badge yellow">
-          <i />
-          ของถึงลานจอดแล้ว
-        </span>
-      )}
-      {v.status === "SHIPPING" && (
-        <span className="org-badge yellow">กำลังจัดส่ง</span>
-      )}
-    </div>
-    <h4>{v.title}</h4>
-    {v.partner && (
-      <p>
-        <b>คู่ค้า:</b> {v.partner}
-      </p>
-    )}
-    {v.expectedTime && (
-      <p>
-        <b>เวลานัดส่งมอบ:</b> {v.expectedTime} น.
-      </p>
-    )}
-    {v.detail && <div className="detail">{v.detail}</div>}
-    {v.status === "RECEIVED" ? (
-      <div className="foot">
-        <span>
-          <IconCheck /> ตรวจรับโดย {v.receivedByName} เวลา {hhmm(v.receivedAt)}
-        </span>
-        <code>{v.ref}</code>
+}> = ({ v, busy, onStep }) => {
+  const sub = [
+    v.category,
+    v.partner,
+    v.expectedTime ? `นัดส่ง ${v.expectedTime} น.` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <article className={`org-vcard ${v.status === "ARRIVED" ? "urgent" : ""}`}>
+      <div className="top">
+        <h4>{v.title}</h4>
+        {v.status === "ARRIVED" && (
+          <span className="org-badge hot">ของถึงแล้ว</span>
+        )}
+        {v.status === "SHIPPING" && (
+          <span className="org-badge">กำลังจัดส่ง</span>
+        )}
       </div>
-    ) : (
+      {sub && <p className="sub">{sub}</p>}
+      {v.detail && <p className="detail">{v.detail}</p>}
       <div className="org-vact">
         {v.status === "SHIPPING" && (
           <button
@@ -783,19 +664,32 @@ const VendorCard: React.FC<{
             disabled={busy}
             onClick={() => onStep(v, "ARRIVED")}
           >
-            แจ้งของถึงลานจอดแล้ว
+            แจ้งของถึงแล้ว
           </button>
         )}
         <button
-          className="org-btn-outline"
+          className="org-btn-black sm"
           disabled={busy}
           onClick={() => onStep(v, "RECEIVED")}
         >
-          <IconChecklist /> ตรวจรับและลงนาม (Mark as Received)
+          <IconCheck size={16} /> ตรวจรับของ
         </button>
       </div>
-    )}
-  </article>
+    </article>
+  );
+};
+
+// ของที่ตรวจรับแล้ว: ย่อเหลือ 1 บรรทัด
+const VendorDone: React.FC<{ v: OpsVendor }> = ({ v }) => (
+  <li>
+    <span className="ck">
+      <IconCheck />
+    </span>
+    <span className="nm">{v.title}</span>
+    <span className="by">
+      {hhmm(v.receivedAt)} · {v.receivedByName}
+    </span>
+  </li>
 );
 
 /* =========================================================== คู่ค้า */
@@ -813,6 +707,8 @@ const VendorsTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({
 }) => {
   const [form, setForm] = useState<typeof VENDOR_EMPTY | null>(null);
   const { vendors, job } = board;
+  const pending = vendors.filter((v) => v.status !== "RECEIVED");
+  const receivedList = vendors.filter((v) => v.status === "RECEIVED");
   const vendorStep = (v: OpsVendor, status: VendorStatus) =>
     act(
       () =>
@@ -844,30 +740,18 @@ const VendorsTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({
     );
     setForm(null);
   };
-  const groups: { label: string; list: OpsVendor[] }[] = [
-    {
-      label: "รอตรวจรับ",
-      list: vendors.filter((v) => v.status !== "RECEIVED"),
-    },
-    {
-      label: "ตรวจรับแล้ว",
-      list: vendors.filter((v) => v.status === "RECEIVED"),
-    },
-  ];
   return (
     <section className="org-sheet">
       <div className="org-sec-head">
-        <div>
-          <small>การตรวจรับของจากคู่ค้า</small>
-          <h2>
-            ตรวจสอบคู่ค้า &amp; พัสดุ (
-            {vendors.filter((v) => v.status === "RECEIVED").length}/
-            {vendors.length})
-          </h2>
-        </div>
+        <h2 className="org-h2">
+          ตรวจสอบคู่ค้าและพัสดุ{" "}
+          <span className="org-count">
+            ({receivedList.length}/{vendors.length})
+          </span>
+        </h2>
         <div className="org-actions">
           <button className="org-ghost" disabled={busy} onClick={seed}>
-            สร้างจากตัวเลือกที่เจ้าภาพเลือก
+            สร้างจากที่เจ้าภาพเลือก
           </button>
           <button
             className="org-btn-black sm"
@@ -877,38 +761,34 @@ const VendorsTab: React.FC<{ board: OpsBoard; busy: boolean; act: Act }> = ({
           </button>
         </div>
       </div>
-      <div className="org-rule">
-        <b>ระเบียบมาตรฐานการควบคุม FOMS</b>
-        <p>
-          คู่ค้าต้องส่งมอบก่อนเริ่มพิธี ผู้ตรวจรับกดลงนามรับของ
-          ระบบบันทึกชื่อและเวลาไว้เป็นหลักฐาน ย้อนสถานะไม่ได้
-        </p>
-      </div>
+      <p className="org-note">
+        คู่ค้าต้องส่งมอบก่อนเริ่มพิธี ผู้ตรวจรับกดยืนยัน
+        ระบบบันทึกชื่อและเวลาเป็นหลักฐาน ย้อนสถานะไม่ได้
+      </p>
       {vendors.length === 0 && (
         <div className="org-empty">
-          ยังไม่มีรายการ กด "สร้างจากตัวเลือกที่เจ้าภาพเลือก" หรือ "+
-          เพิ่มรายการ"
+          ยังไม่มีรายการ กด "สร้างจากที่เจ้าภาพเลือก" หรือ "+ เพิ่มรายการ"
         </div>
       )}
-      {groups.map(
-        (g) =>
-          g.list.length > 0 && (
-            <div key={g.label}>
-              <h3 className="org-group">
-                {g.label} ({g.list.length})
-              </h3>
-              <div className="org-vgrid">
-                {g.list.map((v) => (
-                  <VendorCard
-                    key={v.id}
-                    v={v}
-                    busy={busy}
-                    onStep={vendorStep}
-                  />
-                ))}
-              </div>
-            </div>
-          ),
+      {pending.length > 0 && (
+        <>
+          <h3 className="org-group">รอตรวจรับ ({pending.length})</h3>
+          <div className="org-vgrid">
+            {pending.map((v) => (
+              <VendorCard key={v.id} v={v} busy={busy} onStep={vendorStep} />
+            ))}
+          </div>
+        </>
+      )}
+      {receivedList.length > 0 && (
+        <>
+          <h3 className="org-group">ตรวจรับแล้ว ({receivedList.length})</h3>
+          <ul className="org-donelist">
+            {receivedList.map((v) => (
+              <VendorDone key={v.id} v={v} />
+            ))}
+          </ul>
+        </>
       )}
       {form && (
         <Modal title="เพิ่มรายการตรวจรับ" onClose={() => setForm(null)}>
@@ -1070,10 +950,7 @@ const ScheduleTab: React.FC<{
   return (
     <section className="org-sheet">
       <div className="org-sec-head">
-        <div>
-          <small>กำหนดการพิธีทั้งงาน</small>
-          <h2>กำหนดการพิธี (Schedule)</h2>
-        </div>
+        <h2 className="org-h2">กำหนดการพิธี</h2>
         <button
           className="org-btn-black sm"
           disabled={busy || !board.live}
@@ -1088,8 +965,8 @@ const ScheduleTab: React.FC<{
         <div className="org-empty">กำลังโหลด...</div>
       ) : sched.items.length === 0 ? (
         <div className="org-empty">
-          ยังไม่มีกำหนดการ กด "สร้างกำหนดการอัตโนมัติ" ระบบจะสร้างพิธีสรงน้ำศพ
-          สวดอภิธรรมรายคืน ฌาปนกิจ และทำบุญ 7/50/100 วัน ตามกฎของวัด
+          ยังไม่มีกำหนดการ กด "สร้างกำหนดการอัตโนมัติ"
+          ระบบจะสร้างพิธีทั้งงานตามกฎของวัด
         </div>
       ) : (
         <div className="org-days">
@@ -1277,52 +1154,36 @@ const SummaryTab: React.FC<{
   return (
     <section className="org-sheet">
       <div className="org-sec-head">
-        <div>
-          <small>รายงานสรุปงาน {sum.job.bookingRef}</small>
-          <h2>{sum.job.deceasedName}</h2>
-        </div>
-        <span
-          className={`org-chip ${
-            sum.job.status === "IN_PROGRESS" ? "warn" : ""
-          }`}
-        >
-          {STATUS_LABEL[sum.job.status] || sum.job.status}
-        </span>
+        <h2 className="org-h2">รายงานสรุปงาน</h2>
       </div>
-      <div className="org-sumgrid">
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span>ขั้นตอนพิธี</span>
-          </div>
-          <h3>
-            {sum.steps.done} / {sum.steps.total}
-          </h3>
-          <p>
+      <div className="org-metrics flat">
+        <div className="org-metric">
+          <small>ขั้นตอนพิธี</small>
+          <b>
+            {sum.steps.done}/{sum.steps.total}
+          </b>
+          <span>
             เจ้าภาพยืนยันแล้ว {pct}%
             {sum.steps.awaitingHost > 0
               ? ` · รอยืนยัน ${sum.steps.awaitingHost} ขั้น`
               : ""}
-          </p>
+          </span>
         </div>
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span>ตรวจรับคู่ค้า</span>
-          </div>
-          <h3>
-            {sum.vendors.received} / {sum.vendors.total}
-          </h3>
-          <p>
+        <div className="org-metric">
+          <small>ตรวจรับคู่ค้า</small>
+          <b>
+            {sum.vendors.received}/{sum.vendors.total}
+          </b>
+          <span>
             {sum.vendors.total - sum.vendors.received === 0
               ? "ครบทุกรายการ"
               : `ค้าง ${sum.vendors.total - sum.vendors.received} รายการ`}
-          </p>
+          </span>
         </div>
-        <div className="org-stat">
-          <div className="org-stat-top">
-            <span>บุคลากรที่จัดเข้าพิธี</span>
-          </div>
-          <h3>{sum.assignments}</h3>
-          <p>รายการจัดเวร</p>
+        <div className="org-metric">
+          <small>บุคลากรที่จัดเข้าพิธี</small>
+          <b>{sum.assignments}</b>
+          <span>รายการจัดเวร</span>
         </div>
       </div>
       <table className="org-table">
@@ -1382,7 +1243,7 @@ const SummaryTab: React.FC<{
                   : ""
             }
           >
-            ปิดงาน (Complete Job) <IconArrow />
+            ปิดงาน <IconArrow />
           </button>
         </div>
       </div>

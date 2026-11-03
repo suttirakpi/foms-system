@@ -20,11 +20,19 @@ export async function adminFetch<T>(
   const res = await fetch(`${API_URL}/api/admin${path}`, {
     method: init.method || "GET",
     credentials: "include",
-    headers: init.body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    headers:
+      init.body !== undefined
+        ? { "Content-Type": "application/json" }
+        : undefined,
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.message || `เกิดข้อผิดพลาด (${res.status})`, res.status, data);
+  if (!res.ok)
+    throw new ApiError(
+      data.message || `เกิดข้อผิดพลาด (${res.status})`,
+      res.status,
+      data,
+    );
   return data as T;
 }
 
@@ -128,11 +136,23 @@ export interface AuditRow {
   createdAt: string;
 }
 
+// มูลค่างานจองรายเดือน (6 เดือนล่าสุด ไม่รวมงานที่ยกเลิก) — เดือนในรูป "YYYY-MM"
+export interface MonthlyPoint {
+  month: string;
+  bookings: number;
+  amount: number;
+}
+
 export interface Overview {
   users: { total: number; active: number; byRole: Record<string, number> };
   bookings: { total: number; byStatus: Record<string, number> };
   revenue: { approved: number; pendingSlips: number };
-  temples: { total: number; active: number; halls: number; hallsActive: number };
+  temples: {
+    total: number;
+    active: number;
+    halls: number;
+    hallsActive: number;
+  };
   recentBookings: {
     _id: string;
     bookingRef: string;
@@ -147,6 +167,7 @@ export interface Overview {
     createdAt: string;
   }[];
   recentAudit: AuditRow[];
+  monthly?: MonthlyPoint[]; // backend รุ่นเก่าอาจไม่ส่งมา
 }
 
 export interface SystemInfo {
@@ -177,7 +198,12 @@ export const fmtDateTime = (iso?: string | null) =>
 
 export const fmtDate = (iso?: string | null) =>
   iso
-    ? new Intl.DateTimeFormat("th-TH", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(new Date(iso))
+    ? new Intl.DateTimeFormat("th-TH", {
+        timeZone: "UTC",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(iso))
     : "—";
 
 export const BOOKING_STATUS_LABEL: Record<string, string> = {
